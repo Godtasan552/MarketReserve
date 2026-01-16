@@ -8,6 +8,10 @@ import { Container, Nav, Navbar, Row, Col } from 'react-bootstrap';
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
   const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: 'bi-speedometer2' },
     { name: 'Lock Management', path: '/admin/locks', icon: 'bi-shop' },
