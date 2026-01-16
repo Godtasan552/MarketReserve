@@ -15,10 +15,14 @@
 
 #### Day 1-2: Initialize Project
 ```bash
-# สร้าง Next.js 16 project
-npx create-next-app@latest market-lock-system --typescript --tailwind --app
+# สร้าง Next.js 16 project (ไม่ใช้ Tailwind)
+npx create-next-app@latest market-lock-system --typescript --app --no-tailwind
 
-# ติดตั้ง dependencies หลัก
+# ติดตั้ง dependencies สำหรับ UI (Bootstrap)
+npm install bootstrap react-bootstrap sass bootstrap-icons
+npm install --save-dev @types/react-bootstrap
+
+# ติดตั้ง dependencies หลักอื่นๆ
 npm install mongoose next-auth@beta bcryptjs zod react-hook-form @hookform/resolvers
 npm install -D @types/bcryptjs
 ```
@@ -51,6 +55,9 @@ npm install -D @types/bcryptjs
     /auth
     /utils
   /models
+  /styles
+    custom-bootstrap.scss
+    globals.css
   /types
   ```
 
@@ -300,6 +307,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signIn } from 'next-auth/react';
+import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
 
 const loginSchema = z.object({
   email: z.string().email('อีเมลไม่ถูกต้อง'),
@@ -309,7 +317,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
-  const { register, handleSubmit, formErrors } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -323,9 +331,42 @@ export default function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {/* Form fields */}
-    </form>
+    <Container className="py-5">
+      <Card className="mx-auto" style={{ maxWidth: '400px' }}>
+        <Card.Body>
+          <h2 className="text-center mb-4">เข้าสู่ระบบ</h2>
+          <Form onSubmit={handleSubmit(onSubmit)}>
+            <Form.Group className="mb-3">
+              <Form.Label>อีเมล</Form.Label>
+              <Form.Control 
+                type="email" 
+                {...register('email')} 
+                isInvalid={!!errors.email}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.email?.message}
+              </Form.Control.Feedback>
+            </Form.Group>
+
+            <Form.Group className="mb-4">
+              <Form.Label>รหัสผ่าน</Form.Label>
+              <Form.Control 
+                type="password" 
+                {...register('password')} 
+                isInvalid={!!errors.password}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.password?.message}
+              </Form.Control.Feedback>
+            </Form.Group>
+
+            <Button variant="primary" type="submit" className="w-100">
+              เข้าสู่ระบบ
+            </Button>
+          </Form>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 ```
@@ -399,8 +440,9 @@ export async function GET(req: NextRequest) {
 
 **Features**:
 - Grid view และ Map view (ใช้ `react-leaflet` หรือ `mapbox-gl`)
-- Filter (zone, size, price)
-- Search
+- Bootstrap Grid (`Row`, `Col`) สำหรับ Card layout
+- Filter (zone, size, price) - ใช้ `Form.Select` และ `Form.Check`
+- Search bar - ใช้ `InputGroup`
 - Lock detail page พร้อม image gallery
 
 **Availability Calendar**:
@@ -867,6 +909,9 @@ vercel --prod
 
 ## ทรัพยากรเพิ่มเติม
 
+- **Bootstrap Docs**: https://getbootstrap.com/docs/5.3/
+- **React Bootstrap**: https://react-bootstrap.netlify.app/
+- **Bootstrap Icons**: https://icons.getbootstrap.com/
 - **Next.js Docs**: https://nextjs.org/docs
 - **MongoDB Atlas**: https://www.mongodb.com/docs/atlas/
 - **NextAuth.js**: https://next-auth.js.org/

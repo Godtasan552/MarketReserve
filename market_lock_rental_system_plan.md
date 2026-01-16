@@ -31,7 +31,8 @@
 
 ### 3.1 Frontend
 - **Framework**: Next.js 16 with TypeScript
-- **Styling**: TailwindCSS
+- **Styling**: Bootstrap 5.3+ (with React Bootstrap และ Sass สำหรับ customization)
+- **Icons**: Bootstrap Icons หรือ React Icons
 - **State Management**: React Context / Zustand
 - **Form Handling**: React Hook Form + Zod validation
 
@@ -52,6 +53,236 @@
 - **Hosting**: Vercel (Next.js) + MongoDB Atlas (Database)
 - **CDN**: Cloudinary CDN
 - **Domain**: Custom domain with SSL
+
+---
+
+## 3.5 Bootstrap Setup และ Configuration
+
+### 3.5.1 การติดตั้ง (Installation)
+
+**ติดตั้ง dependencies ที่จำเป็น:**
+```bash
+npm install bootstrap react-bootstrap sass
+npm install --save-dev @types/react-bootstrap
+```
+
+**Packages:**
+- `bootstrap`: Core Bootstrap CSS และ JavaScript
+- `react-bootstrap`: Bootstrap components ที่สร้างใหม่สำหรับ React (ไม่ต้องใช้ jQuery)
+- `sass`: สำหรับ customize Bootstrap variables
+- `@types/react-bootstrap`: TypeScript type definitions
+
+### 3.5.2 การ Setup Bootstrap ใน Next.js
+
+**1. Import Bootstrap CSS ใน `app/layout.tsx` (App Router):**
+```typescript
+// app/layout.tsx
+import 'bootstrap/dist/css/bootstrap.min.css';
+// Custom SCSS overrides (ถ้ามี)
+import '@/styles/custom-bootstrap.scss';
+import './globals.css';
+```
+
+**2. สร้างไฟล์ Custom SCSS** (`styles/custom-bootstrap.scss`):
+```scss
+// Override Bootstrap variables ก่อน import
+$primary: #0d6efd;        // สีหลัก
+$secondary: #6c757d;      // สีรอง
+$success: #198754;        // สีสำเร็จ
+$info: #0dcaf0;           // สีข้อมูล
+$warning: #ffc107;        // สีเตือน
+$danger: #dc3545;         // สีอันตราย
+$dark: #212529;           // สีเข้ม
+$light: #f8f9fa;          // สีอ่อน
+
+// Font family
+$font-family-sans-serif: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+
+// Border radius
+$border-radius: 0.5rem;
+$border-radius-sm: 0.25rem;
+$border-radius-lg: 0.75rem;
+
+// Spacing
+$spacer: 1rem;
+
+// Import Bootstrap
+@import '~bootstrap/scss/bootstrap';
+
+// Custom classes
+.card-lock {
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.status-badge {
+  &.available { 
+    background-color: $success; 
+  }
+  &.booked { 
+    background-color: $warning; 
+  }
+  &.rented { 
+    background-color: $danger; 
+  }
+  &.expiring-soon { 
+    background-color: #fd7e14; // Orange
+  }
+}
+```
+
+**3. เพิ่ม Google Fonts** ใน `app/layout.tsx`:
+```typescript
+import { Inter, Noto_Sans_Thai } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
+const notoSansThai = Noto_Sans_Thai({ 
+  subsets: ['thai'], 
+  weight: ['300', '400', '500', '700'] 
+});
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="th" className={`${inter.className} ${notoSansThai.className}`}>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+### 3.5.3 Bootstrap Icons Setup
+
+**ติดตั้ง:**
+```bash
+npm install bootstrap-icons
+```
+
+**Import ใน layout:**
+```typescript
+import 'bootstrap-icons/font/bootstrap-icons.css';
+```
+
+**การใช้งาน:**
+```tsx
+<i className="bi bi-calendar-check me-2"></i>
+<i className="bi bi-geo-alt-fill text-primary"></i>
+```
+
+### 3.5.4 React Bootstrap Components
+
+**ตัวอย่างการใช้งาน:**
+
+```tsx
+// components/LockCard.tsx
+import { Card, Button, Badge } from 'react-bootstrap';
+
+export default function LockCard({ lock }) {
+  return (
+    <Card className="card-lock h-100">
+      <Card.Img variant="top" src={lock.image} alt={lock.name} />
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <Card.Title className="mb-0">{lock.name}</Card.Title>
+          <Badge bg={lock.status === 'available' ? 'success' : 'danger'}>
+            {lock.status === 'available' ? 'ว่าง' : 'ถูกเช่า'}
+          </Badge>
+        </div>
+        <Card.Text className="text-muted">
+          <i className="bi bi-geo-alt me-1"></i>
+          {lock.zone}
+        </Card.Text>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <span className="fs-5 fw-bold text-primary">
+            ฿{lock.pricing.daily}/วัน
+          </span>
+          <Button variant="primary" size="sm">
+            <i className="bi bi-calendar-plus me-1"></i>
+            จองเลย
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+}
+```
+
+### 3.5.5 Utility Classes ที่ใช้บ่อย
+
+**Layout & Spacing:**
+- `container`, `container-fluid` - Container layouts
+- `row`, `col-*` - Grid system
+- `d-flex`, `justify-content-*`, `align-items-*` - Flexbox
+- `m-*`, `p-*`, `mt-*`, `mb-*`, `mx-*`, `my-*` - Margin & Padding
+- `gap-*` - Gap spacing
+
+**Typography:**
+- `fs-*` - Font sizes (1-6)
+- `fw-*` - Font weights (light, normal, bold)
+- `text-*` - Text alignment, colors
+- `lead` - Lead paragraph
+
+**Colors:**
+- `text-primary`, `text-success`, `text-danger`, etc.
+- `bg-primary`, `bg-light`, `bg-dark`, etc.
+- `bg-opacity-*` - Background opacity
+
+**Components:**
+- `btn`, `btn-primary`, `btn-lg`, `btn-sm`
+- `badge`, `badge bg-success`
+- `alert`, `alert-warning`
+- `card`, `card-body`, `card-title`
+- `modal`, `modal-dialog`
+- `navbar`, `navbar-expand-lg`
+- `form-control`, `form-label`, `form-select`
+
+### 3.5.6 Responsive Design
+
+Bootstrap ใช้ breakpoints ดังนี้:
+- `xs` - Extra small (< 576px) - Mobile portrait
+- `sm` - Small (≥ 576px) - Mobile landscape
+- `md` - Medium (≥ 768px) - Tablet
+- `lg` - Large (≥ 992px) - Desktop
+- `xl` - Extra large (≥ 1200px) - Large desktop
+- `xxl` - Extra extra large (≥ 1400px) - Extra large desktop
+
+**ตัวอย่างการใช้งาน:**
+```tsx
+<div className="row">
+  {/* Mobile: 1 column, Tablet: 2 columns, Desktop: 4 columns */}
+  <div className="col-12 col-md-6 col-lg-3">
+    <LockCard />
+  </div>
+</div>
+```
+
+### 3.5.7 การ Customize Theme (Optional)
+
+**สร้างไฟล์** `styles/custom-theme.scss`:
+```scss
+// 1. Include functions first
+@import '~bootstrap/scss/functions';
+
+// 2. Override default variables
+$primary: #007bff;
+$secondary: #6c757d;
+$body-bg: #f8f9fa;
+$body-color: #212529;
+$enable-shadows: true;
+$enable-gradients: false;
+$enable-rounded: true;
+
+// 3. Include Bootstrap
+@import '~bootstrap/scss/bootstrap';
+
+// 4. Add custom styles
+.custom-navbar {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+```
 
 ---
 
@@ -925,7 +1156,8 @@ async function autoUnban() {
 ระบบเช่าล็อคตลาดนี้ถูกออกแบบให้รองรับการใช้งานจริงในระดับ Production พร้อมด้วย:
 
 ✅ **ความปลอดภัยระดับสูง**: Authentication, Authorization, Payment Security, API Security  
-✅ **Business Logic สมบูรณ์**: Renewal notification flow, First-Come-First-Served booking, Auto refund  
+✅ **UI/UX Modern**: Bootstrap 5.3+ พร้อม React Bootstrap และ custom theming  
+✅ **Business Logic สมบูรณ์**: Renewal notification flow, First-Come-First-Served booking, Queue management  
 ✅ **Edge Case Handling**: Race conditions, OCR errors, Network failures  
 ✅ **Scalability**: MongoDB Atlas, Cloudinary CDN, Vercel Edge Functions  
 ✅ **Monitoring & Recovery**: Backup, Logging, Error tracking  
@@ -934,4 +1166,25 @@ async function autoUnban() {
 
 ---
 
-**หมายเหตุ**: เอกสารนี้สามารถนำไปใช้เป็นเอกสารออกแบบระบบ (System Design) หรือประกอบรายงานโปรเจ็กต์จบได้ หากมีคำถามเพิ่มเติมสามารถติดต่อทีมพัฒนาได้ทันที
+**หมายเหตุ**: เอกสารนี้สามารถนำไปใช้เป็นเอกสารออกแบบระบบ (System Design) หรือประกอบรายงานโปรเจ็กต์จบได้ 
+
+---
+
+## 12. Bootstrap Migration Benefits
+
+การเปลี่ยนจาก TailwindCSS มาใช้ Bootstrap มีข้อดีดังนี้:
+
+✅ **Component System**: React Bootstrap มี pre-built components พร้อมใช้ (Modal, Navbar, Forms, etc.)  
+✅ **Easier for Beginners**: Class names ที่เข้าใจง่ายกว่า (`btn-primary` vs `bg-blue-500`)  
+✅ **Consistent Design**: มี design system ที่สมบูรณ์แบบจาก Bootstrap  
+✅ **Customization**: สามารถ customize variables ผ่าน SCSS ได้อย่างละเอียด  
+✅ **Thai Language Support**: ใช้งานได้ดีกับ Noto Sans Thai font  
+✅ **Responsive Grid**: Grid system ที่เข้าใจง่ายและใช้งานสะดวก  
+
+**Package ที่ต้องติดตั้ง:**
+```bash
+npm install bootstrap react-bootstrap sass bootstrap-icons
+npm install --save-dev @types/react-bootstrap
+```
+
+หากมีคำถามเพิ่มเติมสามารถติดต่อทีมพัฒนาได้ทันที
