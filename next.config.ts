@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
+  sassOptions: {
+    includePaths: [path.join(__dirname, 'styles'), path.join(__dirname, 'node_modules')],
+    silenceDeprecations: ['legacy-js-api'],
+  },
 };
 
 export default nextConfig;

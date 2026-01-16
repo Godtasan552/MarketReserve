@@ -1,0 +1,48 @@
+// Override Bootstrap variables ก่อน import
+$primary: #0d6efd;        // สีหลัก
+$secondary: #6c757d;      // สีรอง
+$success: #198754;        // สีสำเร็จ
+$info: #0dcaf0;           // สีข้อมูล
+$warning: #ffc107;        // สีเตือน
+$danger: #dc3545;         // สีอันตราย
+$dark: #212529;           // สีเข้ม
+$light: #f8f9fa;          // สีอ่อน
+
+// Font family
+$font-family-sans-serif: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+
+// Border radius
+$border-radius: 0.5rem;
+$border-radius-sm: 0.25rem;
+$border-radius-lg: 0.75rem;
+
+// Spacing
+$spacer: 1rem;
+
+// Import Bootstrap
+@import '../../node_modules/bootstrap/scss/bootstrap';
+
+// Custom classes
+.card-lock {
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.status-badge {
+  &.available { 
+    background-color: $success; 
+  }
+  &.booked { 
+    background-color: $warning; 
+  }
+  &.rented { 
+    background-color: $danger; 
+  }
+  &.expiring-soon { 
+    background-color: #fd7e14; // Orange
+  }
+}
