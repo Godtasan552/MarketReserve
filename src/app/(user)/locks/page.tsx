@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Badge, InputGroup, Spinner, Placeholder } from 'react-bootstrap';
 import Link from 'next/link';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LinkAny = Link as any;
+
 interface Lock {
   _id: string;
   lockNumber: string;
@@ -224,15 +227,15 @@ export default function LockBrowsingPage() {
                       </p>
                       <hr className="my-3 opacity-10" />
                       <div className="d-grid">
-                        <Link href={`/locks/${lock._id}`} passHref legacyBehavior>
                           <Button 
+                            as={LinkAny}
+                            href={`/locks/${lock._id}`}
                             variant={lock.status === 'available' ? 'primary' : 'outline-secondary'}
                             className="fw-bold py-2 rounded-3"
                             disabled={lock.status !== 'available'}
                           >
                             {lock.status === 'available' ? 'จองทันที' : 'จองแล้ว'}
                           </Button>
-                        </Link>
                       </div>
                     </Card.Body>
                   </Card>

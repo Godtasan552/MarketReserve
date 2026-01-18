@@ -5,6 +5,9 @@ import { Container, Row, Col, Card, Badge, Button, Alert, Spinner, Form, Progres
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LinkAny = Link as any;
+
 interface Booking {
   _id: string;
   lock: { lockNumber: string; zone: { name: string } };
@@ -120,9 +123,7 @@ export default function BookingDetailPage() {
   if (error || !booking) return (
     <Container className="py-5">
       <Alert variant="danger">{error || 'ไม่พบข้อมูล'}</Alert>
-      <Link href="/my-bookings" passHref legacyBehavior>
-        <Button variant="outline-primary text-decoration-none">กลับไปหน้ารายการ</Button>
-      </Link>
+      <Button as={LinkAny} variant="outline-primary text-decoration-none" href="/my-bookings">กลับไปหน้ารายการ</Button>
     </Container>
   );
 

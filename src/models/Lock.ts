@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ILock extends Document {
   lockNumber: string;
@@ -39,6 +39,7 @@ const lockSchema = new Schema<ILock>({
     type: String, 
     enum: ['available', 'booked', 'rented', 'maintenance'], 
     default: 'available' 
+    // Future Improvement: Remove 'booked' status. Availability should be calculated dynamically from Bookings. 
   },
   features: [{ type: String }],
   isActive: { type: Boolean, default: true }

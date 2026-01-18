@@ -369,6 +369,11 @@ stateDiagram-v2
 > [!NOTE]
 > **ปัจจุบัน**: เราใช้ `Lock.status = 'booked' | 'available'` เพื่อความรวดเร็วในการพัฒนาช่วงแรก
 > **ข้อควรระวัง (Design Decision)**: ในอนาคต `Lock` ควรทำหน้าที่แค่บอกสถานะทางกายภาพ (เช่น `active` | `maintenance`) ส่วน "ความว่าง" (Availability) ควรถูกคำนวณจาก `Booking` ในช่วงเวลาที่เลือก เพื่อให้ล็อคหนึ่งสามารถมีหลายการจองล่วงหน้าได้
+>
+> **Future Improvement (Roadmap)**:
+> - [ ] Remove `Lock.status = booked`
+> - [ ] Calculate availability purely from Booking collection
+> - [ ] Enable advance booking for same lock (ซ้อนกันได้ถ้าไม่ชนเวลา)
 
 #### 4. Booking Flow Implementation
 
@@ -414,6 +419,8 @@ export async function POST(req: NextRequest) {
 
     // 3. Create booking
     const paymentDeadline = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours
+    
+    // Note: session.user มาจาก auth middleware (inject ผ่าน helper function หรือ auth())
     const booking = await Booking.create([{
       user: session.user.id,
       lock: lockId,
@@ -477,7 +484,8 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  // OCR processing (Tesseract.js or Google Vision)
+  // OCR processing (Optional / Helper)
+  // Note: OCR ใช้เพื่อช่วยตรวจสอบเบื้องต้น (Fill-in) การตัดสินใจสุดท้ายยังคงเป็น Human-in-the-loop
   const ocrResult = await processOCR(result.secure_url);
 
   // Save payment
@@ -561,77 +569,91 @@ export async function GET(req: NextRequest) {
 
 ## Phase 3: Advanced Features (สัปดาห์ 6-7)
 
-### Week 6: Notification System
+### Week 6: Notification System (Refined: Event-based)
 
-#### 1. Email Notifications (Resend)
+เราปรับปรุงระบบแจ้งเตือนให้เป็นแบบ **Event-based Architecture** โดยมี `NotificationService` เป็นตัวกลาง (Dispatcher) เพื่อจัดการทั้ง In-App Notification (Database) และ Email Notification
+
+#### 1. Notification Model (`models/Notification.ts`)
 ```typescript
-// /lib/email/send-email.ts
-import { Resend } from 'resend';
+import mongoose, { Schema, Document } from 'mongoose';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export async function sendBookingConfirmation(booking) {
-  await resend.emails.send({
-    from: 'Market Lock <noreply@marketlock.com>',
-    to: booking.user.email,
-    subject: 'การจองสำเร็จ - ล็อค #' + booking.lock.lockNumber,
-    html: `<p>คุณได้จองล็อค ${booking.lock.lockNumber} เรียบร้อยแล้ว</p>
-           <p>กรุณาชำระเงินภายใน: ${booking.paymentDeadline}</p>`,
-  });
+export interface INotification extends Document {
+  user: mongoose.Types.ObjectId;
+  type: 'booking_created' | 'payment_uploaded' | 'booking_approved' | 'booking_rejected' | 'booking_cancelled' | 'booking_expiring' | 'system';
+  title: string;
+  message: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: Date;
 }
+
+const notificationSchema = new Schema<INotification>({
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  link: { type: String },
+  isRead: { type: Boolean, default: false },
+}, { timestamps: true });
+
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+
+export default mongoose.models.Notification || mongoose.model<INotification>('Notification', notificationSchema);
 ```
 
-#### 2. Web Push Notifications
+#### 2. Notification Service (`lib/notification/service.ts`)
+ทำหน้าที่เป็น Dispatcher กลาง ไม่เรียก Email Service ตรงๆ จาก Controller
+
 ```typescript
-// /lib/notifications/push.ts
-import webpush from 'web-push';
+export const NotificationService = {
+  async send(userId: string, type: NotificationType, data: any) {
+    // 1. Create In-App Notification (Always)
+    await createInAppNotification(userId, type, data);
 
-webpush.setVapidDetails(
-  'mailto:admin@marketlock.com',
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
-export async function sendPushNotification(subscription, payload) {
-  await webpush.sendNotification(subscription, JSON.stringify(payload));
-}
+    // 2. Send Email (Conditional based on policy)
+    if (shouldSendEmail(type)) {
+      await sendEmailNotification(userId, type, data);
+    }
+  }
+};
 ```
 
-#### 3. Renewal Notification Cron
+#### 2.1 Notification Policy
+
+| Event | In-App | Email |
+|------|--------|-------|
+| booking_created | ✅ | ✅ |
+| payment_uploaded | ❌ | ❌ |
+| booking_approved | ✅ | ✅ |
+| booking_expiring | ✅ | ✅ |
+```
+
+#### 3. API Endpoints
+- **GET** `/api/notifications`: ดึงรายการแจ้งเตือนล่าสุด
+- **PATCH** `/api/notifications/[id]/read`: อ่านรายการเดียว
+- **PATCH** `/api/notifications/read-all`: อ่านทั้งหมด
+
+#### 4. Renewal Notification Cron
+ปรับปรุงให้เรียกผ่าน `NotificationService`
+
 ```typescript
 // /app/api/cron/send-renewal-notifications/route.ts
-export async function GET(req: NextRequest) {
-  await connectDB();
-  const threeHoursLater = new Date(Date.now() + 3 * 60 * 60 * 1000);
-
-  // Find bookings expiring in ~3 hours
-  const expiringBookings = await Booking.find({
-    status: 'active',
-    endDate: {
-      $gte: new Date(Date.now() + 2.5 * 60 * 60 * 1000),
-      $lte: threeHoursLater,
-    },
-    renewalNotificationSent: { $ne: true },
-  }).populate('user lock');
-
+// ...
   for (const booking of expiringBookings) {
-    // Send notification to current renter
-    await sendRenewalNotification(booking);
+    await NotificationService.send(booking.user.id, 'booking_expiring', booking);
     booking.renewalNotificationSent = true;
     await booking.save();
   }
-
-  return NextResponse.json({ notified: expiringBookings.length });
-}
+// ...
 ```
 
 **Checklist**:
-- [ ] Email notifications (Resend)
-- [ ] Push notifications setup
-- [ ] Renewal notification cron
-- [ ] Interest list notification
-- [ ] In-app notification UI
-- [ ] Notification preferences
+- [x] Create Notification Model
+- [x] Implement NotificationService (Dispatcher)
+- [x] Create API Endpoints (Get, Read, ReadAll)
+- [x] UI Components (Bell, Notification List)
+- [x] Refactor Booking/Payment APIs to use NotificationService
+- [x] Renewal Cron Job Integration
 
 ### Week 7: Analytics Dashboard
 

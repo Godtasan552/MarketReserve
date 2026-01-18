@@ -1,28 +1,26 @@
-import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface INotification extends Document {
-  user: Types.ObjectId;
-  type: 'booking_confirmed' | 'payment_approved' | 'expiry_warning' | 'renewal_reminder' | 'lock_available';
+  user: mongoose.Types.ObjectId;
+  type: 'booking_created' | 'payment_uploaded' | 'booking_approved' | 'booking_rejected' | 'booking_cancelled' | 'booking_expiring' | 'system';
   title: string;
   message: string;
-  data?: Record<string, unknown>;
-  read: boolean;
-  sentVia: string[];
+  link?: string;
+  isRead: boolean;
   createdAt: Date;
 }
 
 const notificationSchema = new Schema<INotification>({
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  type: { 
-    type: String, 
-    enum: ['booking_confirmed', 'payment_approved', 'expiry_warning', 'renewal_reminder', 'lock_available'],
-    required: true 
-  },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  data: { type: Schema.Types.Mixed },
-  read: { type: Boolean, default: false },
-  sentVia: [{ type: String }] // e.g. ['email', 'push', 'sms']
-}, { timestamps: { createdAt: true, updatedAt: false } });
+  link: { type: String },
+  isRead: { type: Boolean, default: false },
+}, { timestamps: true });
 
+// Performance index
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+
+// Check if model exists to prevent overwrite error during hot reload
 export default mongoose.models.Notification || mongoose.model<INotification>('Notification', notificationSchema);

@@ -4,10 +4,12 @@ import connectDB from '@/lib/db/mongoose';
 import Booking from '@/models/Booking';
 import Lock from '@/models/Lock';
 import mongoose from 'mongoose';
+import { NotificationService } from '@/lib/notification/service';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
+    // Note: session.user comes from auth middleware (inject via helper or auth())
     if (!session?.user) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
     }
@@ -81,6 +83,18 @@ export async function POST(req: NextRequest) {
 
       await dbSession.commitTransaction();
       dbSession.endSession();
+
+      // Send Notification (Event-based)
+      // Note: session.user.id is used for In-App, session.user.email for Email
+      if (session.user?.id) {
+         await NotificationService.send(session.user.id, 'booking_created', {
+            bookingId: booking[0]._id.toString(),
+            lockNumber: lock.lockNumber,
+            totalAmount: amount,
+            paymentDeadline,
+            userEmail: session.user.email || undefined
+         });
+      }
 
       return NextResponse.json(booking[0], { status: 201 });
     } catch (err: unknown) {

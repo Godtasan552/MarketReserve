@@ -1,9 +1,15 @@
 'use client';
 
+
+
 import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import NotificationBell from '@/components/notification/NotificationBell';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LinkAny = Link as any;
 
 export default function UserLayout({
   children,
@@ -17,27 +23,22 @@ export default function UserLayout({
     <div className="min-vh-100 d-flex flex-column">
       <Navbar bg="white" expand="lg" className="shadow-sm sticky-top py-3">
         <Container>
-          <Link href="/" passHref legacyBehavior>
-            <Navbar.Brand className="fw-bold text-primary d-flex align-items-center">
+          <Navbar.Brand as={LinkAny} href="/" className="fw-bold text-primary d-flex align-items-center">
               <i className="bi bi-cart4 me-2 fs-3"></i>
               MARKET HUB
-            </Navbar.Brand>
-          </Link>
+          </Navbar.Brand>
           <Navbar.Toggle aria-controls="user-navbar-nav" />
           <Navbar.Collapse id="user-navbar-nav">
             <Nav className="ms-auto align-items-center gap-2">
-              <Link href="/locks" passHref legacyBehavior>
-                <Nav.Link active={pathname === '/locks'} className="fw-medium">
+              <Nav.Link as={LinkAny} href="/locks" active={pathname === '/locks'} className="fw-medium">
                   จองล็อก
-                </Nav.Link>
-              </Link>
+              </Nav.Link>
               {session ? (
                 <>
-                  <Link href="/my-bookings" passHref legacyBehavior>
-                    <Nav.Link active={pathname === '/my-bookings'} className="fw-medium">
+                  <Nav.Link as={LinkAny} href="/my-bookings" active={pathname === '/my-bookings'} className="fw-medium">
                       การจองของฉัน
-                    </Nav.Link>
-                  </Link>
+                  </Nav.Link>
+                  <NotificationBell />
                   <NavDropdown 
                     title={
                       <span className="d-inline-flex align-items-center">
@@ -49,17 +50,13 @@ export default function UserLayout({
                     align="end"
                   >
                     {session.user?.role !== 'user' && (
-                      <Link href="/admin/dashboard" passHref legacyBehavior>
-                        <NavDropdown.Item>
+                      <NavDropdown.Item as={LinkAny} href="/admin/dashboard">
                           หน้าจัดการ (Admin)
-                        </NavDropdown.Item>
-                      </Link>
-                    )}
-                    <Link href="/profile" passHref legacyBehavior>
-                      <NavDropdown.Item>
-                        ข้อมูลส่วนตัว
                       </NavDropdown.Item>
-                    </Link>
+                    )}
+                    <NavDropdown.Item as={LinkAny} href="/profile">
+                        ข้อมูลส่วนตัว
+                    </NavDropdown.Item>
                     <NavDropdown.Divider />
                     <NavDropdown.Item onClick={() => signOut({ callbackUrl: '/' })} className="text-danger">
                       <i className="bi bi-box-arrow-right me-2"></i> ออกจากระบบ
@@ -68,16 +65,12 @@ export default function UserLayout({
                 </>
               ) : (
                 <div className="d-flex gap-2 ms-lg-3">
-                  <Link href="/login" passHref legacyBehavior>
-                    <Button variant="outline-primary" className="px-4">
+                  <Button as={LinkAny} href="/login" variant="outline-primary" className="px-4">
                       เข้าสู่ระบบ
-                    </Button>
-                  </Link>
-                  <Link href="/register" passHref legacyBehavior>
-                    <Button variant="primary" className="px-4">
+                  </Button>
+                  <Button as={LinkAny} href="/register" variant="primary" className="px-4">
                       สมัครสมาชิก
-                    </Button>
-                  </Link>
+                  </Button>
                 </div>
               )}
             </Nav>

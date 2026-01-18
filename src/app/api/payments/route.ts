@@ -5,6 +5,7 @@ import Booking from '@/models/Booking';
 import Payment from '@/models/Payment';
 import cloudinary from '@/lib/cloudinary';
 import mongoose from 'mongoose';
+import { NotificationService } from '@/lib/notification/service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -79,6 +80,12 @@ export async function POST(req: NextRequest) {
 
       await dbSession.commitTransaction();
       dbSession.endSession();
+
+      // Send Notification (Event-based) - Policy will check if it should be sent
+      await NotificationService.send(session.user.id, 'payment_uploaded', {
+        bookingId: bookingId,
+        userEmail: session.user.email || undefined
+      });
 
       return NextResponse.json(payment[0], { status: 201 });
     } catch (err: unknown) {

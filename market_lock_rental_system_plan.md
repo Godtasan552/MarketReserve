@@ -371,13 +371,14 @@ $enable-rounded: true;
 - อัปโหลดไปยัง Cloudinary
 - File hash verification เพื่อตรวจสอบความซ้ำซ้อน
 
-#### 4.4.2 OCR Processing
-- ระบบ OCR อ่านข้อมูลจากสลิปอัตโนมัติ:
+#### 4.4.2 OCR Processing (Human-in-the-loop)
+- ระบบ OCR อ่านข้อมูลจากสลิปอัตโนมัติเพื่อ **ช่วยกรอกข้อมูลเบื้องต้น** (Pre-fill):
   - จำนวนเงิน
   - วันที่ / เวลาโอน
   - หมายเลขอ้างอิง
-- แสดง Confidence Score
-- ผู้ใช้สามารถแก้ไขข้อมูล OCR ได้หาก OCR อ่านผิด
+- **Optional**: ระบบทำงานต่อได้แม้ OCR อ่านไม่ออก
+- **Human Review**: ผู้ใช้ต้องตรวจสอบและยืนยันความถูกต้องก่อนส่ง (Human-in-the-loop)
+- แสดง Confidence Score ให้ทราบ
 
 #### 4.4.3 Validation
 - ตรวจสอบจำนวนเงินตรงกับยอดที่ต้องชำระ (±5 บาท tolerance)
@@ -393,20 +394,22 @@ $enable-rounded: true;
 
 ### 4.6 การแจ้งเตือน (Notification)
 
-#### 4.6.1 ประเภทการแจ้งเตือน
-- **Real-time** (Web Push + In-app):
-  - เมื่อมีล็อคที่สนใจว่าง
-  - เมื่อใกล้หมดเวลาชำระเงิน (30 นาที, 5 นาที)
-  - เมื่อ Admin อนุมัติ/ปฏิเสธ
+#### 4.6.1 ประเภทการแจ้งเตือน (Event-based Architecture)
 
-- **Email**:
-  - ยืนยันการจอง
-  - Receipt หลังชำระเงินสำเร็จ
-  - สรุปสัญญาเช่า
+ระบบใช้ **NotificationService** เป็นศูนย์กลางในการจัดการ (Dispatcher) โดยบันทึก In-App Notification ลงฐานข้อมูลเสมอ และส่ง Email ตามความสำคัญของเหตุการณ์
 
-- **Scheduled** (Cron Job):
-  - ใกล้หมดสัญญา: 7 วัน, 3 วัน, 1 วัน, 3 ชม.
-  - แจ้งผู้เช่าเดิมเพื่อต่อสัญญา (3 ชม. ก่อนหมด)
+**Notification Policy:**
+
+| เหตุการณ์ (Event) | In-App (Web) | Email | หมายเหตุ |
+|-------------------|--------------|-------|----------|
+| **จองสำเร็จ** (Booking Created) | ✅ | ✅ | แจ้งยอดชำระและ Deadline |
+| **อัปโหลดสลิป** (Payment Uploaded) | ❌ | ❌ | ลด Spam (ผู้ใช้รู้ตัวอยู่แล้ว) |
+| **อนุมัติ/ปฏิเสธ** (Approved/Rejected)| ✅ | ✅ | แจ้งผลการตรวจสอบทันที |
+| **แจ้งเตือนก่อนหมดอายุ** (Expiring) | ✅ | ✅ | แจ้งเตือนเพื่อให้ต่อสัญญา |
+| **ระบบ/ทั่วไป** (System) | ✅ | ❌ | แจ้งข่าวสารทั่วไป |
+
+- **Real-time**: ใช้การ Polling หน้าเว็บระยะสั้น (Demo-ready) หรือ WebSocket (Future)
+- **Email Provider**: Resend หรือ SendGrid
 
 ### 4.7 การยกเลิกและคืนเงิน (Cancellation & Refund)
 
@@ -710,7 +713,8 @@ $enable-rounded: true;
     monthly: Number
   },
   images: [String], // Cloudinary URLs
-  status: String (enum: ['available', 'booked', 'rented', 'maintenance']),
+  status: String (enum: ['available', 'booked', 'rented', 'maintenance']), 
+  // Note: Future plan is to remove 'booked' status and calculate availability from Booking collection
   features: [String], // e.g., ['covered', 'electricity', 'water']
   isActive: Boolean,
   createdAt: Date,
@@ -779,19 +783,27 @@ $enable-rounded: true;
 // Compound index: (lock, user) - unique
 ```
 
-### 7.7 notifications
+### 7.7 notifications (New Schema)
 ```javascript
 {
   _id: ObjectId,
   user: ObjectId (ref: 'users', indexed),
-  type: String (enum: ['booking_confirmed', 'payment_approved', 'expiry_warning', 'renewal_reminder', 'lock_available']),
+  type: String (enum: [
+    'booking_created', 
+    'booking_approved', 
+    'booking_rejected', 
+    'booking_cancelled', 
+    'booking_expiring', 
+    'system'
+  ]),
   title: String,
   message: String,
-  data: Object, // Additional data
-  read: Boolean,
-  sentVia: [String], // ['email', 'push', 'sms']
-  createdAt: Date
+  link: String, // Optional deep link
+  isRead: Boolean,
+  createdAt: Date,
+  updatedAt: Date
 }
+// Index: { user: 1, isRead: 1, createdAt: -1 }
 ```
 
 ### 7.8 refunds

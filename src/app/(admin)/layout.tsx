@@ -7,6 +7,9 @@ import { Container, Nav, Navbar, Row, Col } from 'react-bootstrap';
 import { useSession } from 'next-auth/react';
 import { hasPermission, Action } from '@/lib/auth/permissions';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LinkAny = Link as any;
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -30,7 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="d-flex flex-column min-vh-100 bg-light">
       <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm sticky-top">
         <Container fluid>
-          <Navbar.Brand as={Link} href="/admin/dashboard" className="fw-bold">
+          <Navbar.Brand as={LinkAny} href="/admin/dashboard" className="fw-bold">
             <i className="bi bi-shield-lock-fill me-2 text-warning"></i>
             MarketHub Admin
           </Navbar.Brand>
@@ -40,7 +43,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               {filteredMenu.map((item) => (
                 <Nav.Link 
                   key={item.path} 
-                  as={Link} 
+                  as={LinkAny} 
                   href={item.path}
                   active={pathname === item.path}
                 >
@@ -61,7 +64,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               {filteredMenu.map((item) => (
                 <Nav.Link
                   key={item.path}
-                  as={Link}
+                  as={LinkAny}
                   href={item.path}
                   active={pathname.startsWith(item.path)}
                   className="mb-2"

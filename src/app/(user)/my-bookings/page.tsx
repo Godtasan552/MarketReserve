@@ -5,6 +5,9 @@ import { Container, Row, Col, Card, Badge, Button, Spinner, Alert } from 'react-
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LinkAny = Link as any;
+
 interface Booking {
   _id: string;
   lock: { lockNumber: string };
@@ -63,11 +66,9 @@ export default function MyBookingsPage() {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold m-0">การจองของฉัน</h2>
-        <Link href="/locks" passHref legacyBehavior>
-          <Button variant="primary">
+          <Button as={LinkAny} href="/locks" variant="primary">
             <i className="bi bi-plus-lg me-2"></i> จองล็อกเพิ่ม
           </Button>
-        </Link>
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}
@@ -77,9 +78,7 @@ export default function MyBookingsPage() {
           <i className="bi bi-calendar-x display-1 text-light mb-3 d-block"></i>
           <h3>คุณยังไม่มีการจองในขณะนี้</h3>
           <p className="text-muted">เลือกทำเลที่ถูกใจและเริ่มสร้างรายได้ได้เลย</p>
-          <Link href="/locks" passHref legacyBehavior>
-            <Button variant="primary">ไปดูพื้นที่ว่าง</Button>
-          </Link>
+            <Button as={LinkAny} href="/locks" variant="primary">ไปดูพื้นที่ว่าง</Button>
         </div>
       ) : (
         <Row xs={1} md={2} className="g-4">

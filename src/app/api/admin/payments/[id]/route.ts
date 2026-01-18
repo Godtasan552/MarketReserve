@@ -6,6 +6,7 @@ import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
 import Lock from '@/models/Lock';
 import mongoose from 'mongoose';
+import { NotificationService } from '@/lib/notification/service';
 
 export async function PUT(
   req: NextRequest,
@@ -28,6 +29,8 @@ export async function PUT(
     const dbSession = await mongoose.startSession();
     dbSession.startTransaction();
 
+    let emailData = null;
+
     try {
       const payment = await Payment.findById(id).session(dbSession);
       if (!payment) throw new Error('ไม่พบข้อมูลการชำระเงิน');
@@ -39,20 +42,43 @@ export async function PUT(
       await payment.save({ session: dbSession });
 
       if (status === 'approved') {
-        // Update Booking to active
-        await Booking.findByIdAndUpdate(
-          payment.booking,
-          { status: 'active' },
-          { session: dbSession }
-        );
-        
-        // Update Lock to rented
-        const booking = await Booking.findById(payment.booking).session(dbSession);
-        await Lock.findByIdAndUpdate(
-          booking.lock,
-          { status: 'rented' },
-          { session: dbSession }
-        );
+        // Find booking with population to get user/lock info for email
+        const booking = await Booking.findById(payment.booking)
+          .populate('user')
+          .populate('lock')
+          .session(dbSession);
+
+        if (booking) {
+            // Update Booking to active
+            await Booking.findByIdAndUpdate(
+              payment.booking,
+              { status: 'active' },
+              { session: dbSession }
+            );
+            
+            // Update Lock to rented
+            // Handle if lock is populated or not (safe check)
+            const lockId = booking.lock?._id || booking.lock;
+            await Lock.findByIdAndUpdate(
+              lockId,
+              { status: 'rented' },
+              { session: dbSession }
+            );
+
+            // Prepare email data
+            // Check if user and lock are populated with expected fields
+            if (booking.user?.email && booking.lock?.lockNumber) {
+              emailData = {
+                userEmail: booking.user.email,
+                userName: booking.user.name || 'User',
+                userId: booking.user._id.toString(), // Store user ID for notification
+                lockNumber: booking.lock.lockNumber,
+                bookingId: booking._id.toString(),
+                startDate: booking.startDate,
+                endDate: booking.endDate
+              };
+            }
+        }
       } else {
         // If rejected, booking goes back to pending_payment
         await Booking.findByIdAndUpdate(
@@ -64,6 +90,19 @@ export async function PUT(
 
       await dbSession.commitTransaction();
       dbSession.endSession();
+
+      // Send Notification (Event-based)
+      if (emailData) {
+        // We use emailData constructed above.
+        await NotificationService.send(emailData.userId, 'booking_approved', {
+            bookingId: emailData.bookingId,
+            lockNumber: emailData.lockNumber,
+            startDate: emailData.startDate,
+            endDate: emailData.endDate,
+            userName: emailData.userName,
+            userEmail: emailData.userEmail
+        });
+      }
 
       return NextResponse.json({ message: 'ดำเนินการเรียบร้อยแล้ว' });
     } catch (err: unknown) {
