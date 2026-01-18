@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
 import Booking from '@/models/Booking';
 import Lock from '@/models/Lock';
+import { notifyInterestedUsers } from '@/lib/interest-notifier';
 
 export async function GET() {
   try {
@@ -24,6 +25,9 @@ export async function GET() {
 
       // 2. Release the lock
       await Lock.findByIdAndUpdate(booking.lock, { status: 'available' });
+
+      // 3. Notify interested users
+      await notifyInterestedUsers(booking.lock.toString());
       
       cancelledCount++;
     }

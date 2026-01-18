@@ -32,6 +32,53 @@ export default function LockBrowsingPage() {
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [statusFilter, setStatusFilter] = useState('');
 
+  // Bookmarks
+  const [bookmarkedLockIds, setBookmarkedLockIds] = useState<string[]>([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  const fetchBookmarks = async () => {
+    try {
+      const res = await fetch('/api/wishlist');
+      if (res.ok) {
+        const data = await res.json();
+        setBookmarkedLockIds(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookmarks', error);
+    }
+  };
+
+  const toggleBookmark = async (e: React.MouseEvent, lockId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Optimistic update
+    const isBookmarked = bookmarkedLockIds.includes(lockId);
+    let newBookmarks = [];
+    if (isBookmarked) {
+      newBookmarks = bookmarkedLockIds.filter(id => id !== lockId);
+    } else {
+      newBookmarks = [...bookmarkedLockIds, lockId];
+    }
+    setBookmarkedLockIds(newBookmarks);
+
+    try {
+      const res = await fetch('/api/wishlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockId })
+      });
+      
+      if (!res.ok) {
+        // Revert if failed
+         setBookmarkedLockIds(bookmarkedLockIds);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark', error);
+      setBookmarkedLockIds(bookmarkedLockIds);
+    }
+  };
+
   const fetchZones = async () => {
     try {
       const res = await fetch('/api/admin/zones'); // Reusing admin API for zones as it's just a list
@@ -68,6 +115,7 @@ export default function LockBrowsingPage() {
   useEffect(() => {
     fetchZones();
     fetchLocks();
+    fetchBookmarks();
   }, [fetchLocks]);
 
   const getStatusBadge = (status: string) => {
@@ -84,7 +132,12 @@ export default function LockBrowsingPage() {
     setSelectedZone('');
     setPriceRange({ min: '', max: '' });
     setStatusFilter('');
+    setShowFavoritesOnly(false);
   };
+  
+  const displayedLocks = showFavoritesOnly 
+    ? locks.filter(l => bookmarkedLockIds.includes(l._id)) 
+    : locks;
 
   return (
     <Container className="py-4">
@@ -150,6 +203,17 @@ export default function LockBrowsingPage() {
                 </Form.Select>
               </Form.Group>
 
+              <Form.Group className="mb-4">
+                <Form.Check 
+                  type="switch"
+                  id="favorites-switch"
+                  label="แสดงเฉพาะที่ติดตาม"
+                  checked={showFavoritesOnly}
+                  onChange={(e) => setShowFavoritesOnly(e.target.checked)}
+                  className="small fw-bold text-muted text-uppercase"
+                />
+              </Form.Group>
+
               <Button variant="primary" className="w-100 py-2 fw-bold" onClick={fetchLocks}>
                 <i className="bi bi-funnel me-2"></i> กรองผลการค้นหา
               </Button>
@@ -179,7 +243,7 @@ export default function LockBrowsingPage() {
                 </Col>
               ))}
             </Row>
-          ) : locks.length === 0 ? (
+          ) : displayedLocks.length === 0 ? (
             <div className="text-center py-5 bg-white rounded shadow-sm">
               <i className="bi bi-search display-1 text-light mb-3 d-block"></i>
               <h3>ไม่พบข้อมูลล็อก</h3>
@@ -188,9 +252,17 @@ export default function LockBrowsingPage() {
             </div>
           ) : (
             <Row xs={1} md={2} xl={3} className="g-4">
-              {locks.map((lock) => (
+              {displayedLocks.map((lock) => (
                 <Col key={lock._id}>
-                  <Card className="border-0 shadow-sm h-100 overflow-hidden hover-lift card-hover transition-300">
+                  <Card className="border-0 shadow-sm h-100 overflow-hidden hover-lift card-hover transition-300 position-relative">
+                    <button
+                      className="btn btn-light rounded-circle shadow-sm position-absolute top-0 start-0 m-3 p-0 d-flex align-items-center justify-content-center"
+                      style={{ width: '40px', height: '40px', zIndex: 10, border: 'none' }}
+                      onClick={(e) => toggleBookmark(e, lock._id)}
+                      title={bookmarkedLockIds.includes(lock._id) ? "ยกเลิกการติดตาม" : "ติดตาม"}
+                    >
+                      <i className={`bi ${bookmarkedLockIds.includes(lock._id) ? 'bi-heart-fill text-danger' : 'bi-heart text-secondary'} fs-5`}></i>
+                    </button>
                     <LinkAny href={`/locks/${lock._id}`} className="text-decoration-none text-dark">
                       <div className="position-relative">
                         {lock.images?.[0] ? (

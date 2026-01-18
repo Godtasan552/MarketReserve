@@ -32,6 +32,93 @@ export default function LockDetailClient() {
   const [startDate, setStartDate] = useState('');
   const [rentalType, setRentalType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [bookingLoading, setBookingLoading] = useState(false);
+  
+  // Bookmark State
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  // Queue State
+  const [queueInfo, setQueueInfo] = useState({ count: 0, inQueue: false, userPosition: null });
+  const [queueLoading, setQueueLoading] = useState(false);
+
+  const fetchQueueInfo = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/queue?lockId=${id}`);
+      if (res.ok) {
+        setQueueInfo(await res.json());
+      }
+    } catch (e) {
+      console.error('Fetch queue error', e);
+    }
+  }, [id]);
+
+  const handleToggleQueue = async () => {
+    if (!session) {
+       router.push(`/login?callbackUrl=/locks/${id}`);
+       return;
+    }
+    
+    setQueueLoading(true);
+    const action = queueInfo.inQueue ? 'leave' : 'join';
+
+    try {
+      const res = await fetch('/api/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockId: id, action })
+      });
+      
+      if (res.ok) {
+        await fetchQueueInfo();
+        showAlert('สำเร็จ', action === 'join' ? 'เข้าคิวเรียบร้อยแล้ว' : 'ออกจากคิวเรียบร้อยแล้ว', 'success');
+      } else {
+        const err = await res.json();
+        showAlert('ผิดพลาด', err.error || 'ไม่สามารถดำเนินการได้', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showAlert('ผิดพลาด', 'เกิดข้อผิดพลาด', 'error');
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
+  const fetchBookmarkStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/wishlist');
+      if (res.ok) {
+        const bookmarks: string[] = await res.json();
+        // Check if current lock ID is in the bookmarks list
+        // id from params might be string or array, strictly it's string from file path [id]
+        if (Array.isArray(bookmarks) && id && bookmarks.includes(id as string)) {
+          setIsBookmarked(true);
+        } else {
+            setIsBookmarked(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookmark status', error);
+    }
+  }, [id]);
+
+  const toggleBookmark = async () => {
+    // Optimistic Update
+    const prevState = isBookmarked;
+    setIsBookmarked(!prevState);
+
+    try {
+      const res = await fetch('/api/wishlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockId: id })
+      });
+      
+      if (!res.ok) throw new Error('Failed to toggle bookmark');
+    } catch (e) {
+      console.error(e);
+      setIsBookmarked(prevState); // Revert
+      showAlert('Error', 'ไม่สามารถบันทึกรายการโปรดได้', 'error');
+    }
+  };
 
   const fetchLock = useCallback(async () => {
     try {
@@ -51,8 +138,12 @@ export default function LockDetailClient() {
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchLock();
-  }, [id, fetchLock]);
+    if (id) {
+        fetchLock();
+        fetchBookmarkStatus();
+        fetchQueueInfo();
+    }
+  }, [id, fetchLock, fetchBookmarkStatus, fetchQueueInfo]);
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +232,17 @@ export default function LockDetailClient() {
             )}
             <Card.Body className="p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h1 className="fw-bold mb-0">ล็อก {lock.lockNumber}</h1>
+                <div className="d-flex align-items-center gap-2">
+                  <h1 className="fw-bold mb-0">ล็อก {lock.lockNumber}</h1>
+                  <Button 
+                    variant="link" 
+                    className="p-0 border-0 ms-2 text-decoration-none"
+                    onClick={toggleBookmark}
+                    title={isBookmarked ? 'ยกเลิกการติดตาม' : 'ติดตามสถานะ'}
+                  >
+                    <i className={`bi ${isBookmarked ? 'bi-heart-fill text-danger' : 'bi-heart text-secondary'} fs-2`}></i>
+                  </Button>
+                </div>
                 <Badge bg={lock.status === 'available' ? 'success' : 'secondary'} className="px-3 py-2 fs-6">
                   {lock.status === 'available' ? 'ว่าง' : lock.status}
                 </Badge>
@@ -186,16 +287,19 @@ export default function LockDetailClient() {
         <Col lg={4}>
           <Card className="border-0 shadow-sm sticky-top" style={{ top: '100px' }}>
             <Card.Body className="p-4">
-              <h4 className="fw-bold mb-4">จองพื้นที่ขายของ</h4>
+              <h4 className="fw-bold mb-4">
+                {lock.status === 'available' ? 'จองพื้นที่ขายของ' : 'สถานะการจอง'}
+              </h4>
               
               <div className="bg-primary bg-opacity-10 p-3 rounded-3 mb-4 text-primary">
                 <div className="small mb-1">เริ่มต้นเพียง</div>
                 <div className="h2 fw-bold mb-0 text-primary">฿{lock.pricing.daily.toLocaleString()} <span className="small text-muted fw-normal">/วัน</span></div>
               </div>
 
-              <Form onSubmit={handleBooking}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">เลือกรูปแบบการเช่า</Form.Label>
+              {lock.status === 'available' ? (
+                <Form onSubmit={handleBooking}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-bold">เลือกรูปแบบการเช่า</Form.Label>
                   <div className="d-grid gap-2">
                     <Button 
                       variant={rentalType === 'daily' ? 'primary' : 'outline-primary'} 
@@ -249,12 +353,12 @@ export default function LockDetailClient() {
                     size="lg" 
                     type="submit" 
                     className="fw-bold py-3"
-                    disabled={bookingLoading || lock.status !== 'available'}
+                    disabled={bookingLoading}
                   >
                     {bookingLoading ? (
                       <><Spinner animation="border" size="sm" className="me-2" /> กำลังประมวลผล...</>
                     ) : (
-                      lock.status === 'available' ? 'ยืนยันการจอง' : 'ไม่สามารถจองได้'
+                      'ยืนยันการจอง'
                     )}
                   </Button>
                 </div>
@@ -262,6 +366,54 @@ export default function LockDetailClient() {
                   <i className="bi bi-info-circle me-1"></i> เมื่อจองแล้ว คุณจะมีเวลา 3 ชั่วโมงในการชำระเงิน
                 </p>
               </Form>
+              ) : (
+                <div>
+                   <Alert variant="warning" className="border-0 bg-warning bg-opacity-10 text-dark mb-4">
+                      <div className="d-flex">
+                        <i className="bi bi-exclamation-triangle-fill me-3 fs-4 text-warning"></i>
+                        <div>
+                          <strong>ล็อกนี้ไม่ว่างในขณะนี้</strong>
+                          <p className="mb-0 small">คุณสามารถเข้าคิวรอเพื่อรับสิทธิ์จองเมื่อล็อกว่างลง</p>
+                        </div>
+                      </div>
+                   </Alert>
+                   
+                   <div className="bg-light rounded-3 p-3 mb-4 text-center border">
+                      <div className="text-muted small mb-1">จำนวนคนรอคิวขณะนี้</div>
+                      <div className="display-4 fw-bold text-dark">{queueInfo.count} <span className="fs-6 text-muted fw-normal">คน</span></div>
+                   </div>
+
+                   {queueInfo.inQueue ? (
+                      <div className="text-center">
+                        <div className="mb-3">
+                           <Badge bg="primary" className="p-3 rounded-pill mb-2">
+                              <i className="bi bi-person-fill me-2"></i>
+                              คุณคือคิวลำดับที่ {queueInfo.userPosition}
+                           </Badge>
+                           <div className="small text-muted">เมื่อถึงคิวของคุณ ระบบจะแจ้งเตือนทันที</div>
+                        </div>
+                        <Button 
+                          variant="outline-danger" 
+                          className="w-100" 
+                          onClick={handleToggleQueue}
+                          disabled={queueLoading}
+                        >
+                          {queueLoading ? <Spinner size="sm" animation="border" /> : 'ออกจากคิว'}
+                        </Button>
+                      </div>
+                   ) : (
+                      <Button 
+                        variant="primary" 
+                        size="lg" 
+                        className="w-100 fw-bold" 
+                        onClick={handleToggleQueue}
+                        disabled={queueLoading}
+                      >
+                        {queueLoading ? <Spinner size="sm" animation="border" /> : 'เข้าคิวรอจอง'}
+                      </Button>
+                   )}
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
