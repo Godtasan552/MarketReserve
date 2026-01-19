@@ -29,8 +29,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ไม่พบข้อมูลล็อก' }, { status: 404 });
     }
 
-    if (lock.status !== 'available') {
+    // Check standard availability
+    if (lock.status === 'booked' || lock.status === 'rented' || lock.status === 'maintenance') {
       return NextResponse.json({ error: 'ล็อกนี้ไม่ว่างสำหรับการจอง' }, { status: 400 });
+    }
+
+    // Check Reservation Logic
+    if (lock.status === 'reserved') {
+      // 1. Check if user is the reserved one
+      if (lock.reservedTo?.toString() !== session.user.id) {
+         return NextResponse.json({ error: 'ล็อกนี้ติดสิทธิ์จองคิวลำดับถัดไป (Reserved Queue)' }, { status: 403 });
+      }
+      
+      // 2. Check Expiry
+      if (lock.reservationExpiresAt && new Date() > new Date(lock.reservationExpiresAt)) {
+         // Edge case: Cron hasn't run yet but time is up. Strict check.
+         return NextResponse.json({ error: 'สิทธิ์การจองของคุณหมดอายุแล้ว' }, { status: 403 });
+      }
     }
 
     // Calculate dates and amount using utility
@@ -62,12 +77,41 @@ export async function POST(req: NextRequest) {
         isRenewal: false
       }], { session: dbSession });
 
-      // 2. Update Lock Status
-      await Lock.findByIdAndUpdate(
-        lockId, 
-        { status: 'booked' }, 
-        { session: dbSession }
+      // 2. Update Lock Status (Hardcore Race Condition Check)
+      // We perform an atomic update with specific conditions.
+      // If the lock status changed between our initial read and now, this will fail (return null).
+      const updatedLock = await Lock.findOneAndUpdate(
+        {
+          _id: lockId,
+          // Condition: Available OR (Reserved for current user)
+          $or: [
+            { status: 'available' },
+            { status: 'reserved', reservedTo: session.user.id }
+          ]
+        },
+        { 
+          status: 'booked',
+          $unset: { reservedTo: 1, reservationExpiresAt: 1 } 
+        }, 
+        { session: dbSession, new: true }
       );
+
+      if (!updatedLock) {
+         throw new Error('Lock is no longer available (Race Condition detected)');
+      }
+      
+      // 3. Create Audit Log
+      const AuditLog = (await import('@/models/AuditLog')).default;
+      await AuditLog.create([{
+         action: 'BOOKING_CREATED',
+         actorId: session.user.id,
+         targetId: lockId,
+         details: { 
+             bookingId: booking[0]._id, 
+             amount, 
+             prevStatus: lock.status 
+         }
+      }], { session: dbSession });
 
       await dbSession.commitTransaction();
       dbSession.endSession();

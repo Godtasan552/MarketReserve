@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import User from '../src/models/User';
 
@@ -17,18 +16,28 @@ async function seedAdmin() {
     await mongoose.connect(MONGODB_URI as string);
     console.log('Connected to MongoDB');
 
-    const adminName = process.env.ADMIN_NAME || 'System Admin';
-    const adminEmail = process.env.ADMIN_USERNAME || 'admin@markethub.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'adminpassword123';
+    const adminName = process.env.ADMIN_NAME;
+    const adminEmail = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      console.error('Error: ADMIN_USERNAME or ADMIN_PASSWORD not found in .env');
+      return;
+    }
 
     const existingAdmin = await User.findOne({ email: adminEmail });
+    
     if (existingAdmin) {
-      console.log(`Admin with email ${adminEmail} already exists`);
+      console.log(`Admin with email ${adminEmail} already exists. Updating details from .env...`);
+      existingAdmin.name = adminName || existingAdmin.name;
+      existingAdmin.password = adminPassword; // Pre-save hook will re-hash
+      await existingAdmin.save();
+      console.log('Admin details updated successfully!');
     } else {
       const adminUser = new User({
         email: adminEmail,
-        password: adminPassword, // Will be hashed by pre-save hook
-        name: adminName,
+        password: adminPassword,
+        name: adminName || 'System Admin',
         role: 'superadmin',
         isActive: true,
         emailVerified: true,
@@ -36,10 +45,13 @@ async function seedAdmin() {
 
       await adminUser.save();
       console.log('SuperAdmin created successfully!');
-      console.log('Name:', adminName);
-      console.log('Email:', adminEmail);
-      console.log('Password:', Buffer.from(adminPassword).fill('*').toString()); // Hide password in logs
     }
+    
+    console.log('--- Current Admin Config ---');
+    console.log('Name:', adminName || 'System Admin');
+    console.log('Email:', adminEmail);
+    console.log('Password synced with .env');
+    console.log('---------------------------');
   } catch (error) {
     console.error('Error seeding admin:', error);
   } finally {

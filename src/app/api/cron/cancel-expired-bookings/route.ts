@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
 import Booking from '@/models/Booking';
-import Lock from '@/models/Lock';
-import { notifyInterestedUsers } from '@/lib/interest-notifier';
+import { processLockAvailability } from '@/lib/queue-processor';
 
 export async function GET() {
   try {
@@ -23,11 +22,11 @@ export async function GET() {
       // We could add a system note or reason if the schema supports it
       await booking.save();
 
-      // 2. Release the lock
-      await Lock.findByIdAndUpdate(booking.lock, { status: 'available' });
-
-      // 3. Notify interested users
-      await notifyInterestedUsers(booking.lock.toString());
+      // 2. Release the lock via Queue Processor
+      // This helper will check if there is a queue. 
+      // If Queue: Reserve for next user.
+      // If No Queue: Set available & Notify interests.
+      await processLockAvailability(booking.lock.toString());
       
       cancelledCount++;
     }

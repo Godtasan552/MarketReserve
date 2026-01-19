@@ -21,7 +21,7 @@ export default function UserLayout({
 
   return (
     <div className="min-vh-100 d-flex flex-column">
-      <Navbar bg="white" expand="lg" className="shadow-sm sticky-top py-3">
+      <Navbar bg="white" expand="lg" className="shadow-sm sticky-top py-3" style={{ zIndex: 1030 }}>
         <Container>
           <Navbar.Brand as={LinkAny} href="/" className="fw-bold text-primary d-flex align-items-center">
               <i className="bi bi-cart4 me-2 fs-3"></i>

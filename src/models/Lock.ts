@@ -14,9 +14,11 @@ export interface ILock extends Document {
     monthly: number;
   };
   images: string[];
-  status: 'available' | 'booked' | 'rented' | 'maintenance';
+  status: 'available' | 'booked' | 'rented' | 'maintenance' | 'reserved';
   features: string[];
   isActive: boolean;
+  reservedTo?: Types.ObjectId;
+  reservationExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,10 +39,11 @@ const lockSchema = new Schema<ILock>({
   images: [{ type: String }],
   status: { 
     type: String, 
-    enum: ['available', 'booked', 'rented', 'maintenance'], 
+    enum: ['available', 'booked', 'rented', 'maintenance', 'reserved'], 
     default: 'available' 
-    // Future Improvement: Remove 'booked' status. Availability should be calculated dynamically from Bookings. 
   },
+  reservedTo: { type: Schema.Types.ObjectId, ref: 'User' },
+  reservationExpiresAt: { type: Date },
   features: [{ type: String }],
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });

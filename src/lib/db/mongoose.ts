@@ -8,10 +8,10 @@ import '@/models/Booking';
 import '@/models/Payment';
 import '@/models/Notification';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URL;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.warn('MONGODB_URI or MONGO_URL is not defined in environment variables');
+  console.warn('MONGODB_URI or MONGO_URI is not defined in environment variables');
 }
 
 interface MongooseCache {

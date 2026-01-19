@@ -11,9 +11,11 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const userId = session?.user?.id;
+
   // Memoize to use in useEffect
   const fetchUnreadCount = useCallback(async () => {
-    if (!session?.user) return;
+    if (!userId) return;
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
@@ -23,10 +25,13 @@ export default function NotificationBell() {
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
     }
-  }, [session]);
+  }, [userId]);
 
   useEffect(() => {
-    fetchUnreadCount();
+    const init = async () => {
+      await fetchUnreadCount();
+    };
+    init();
     
     // Poll every 60 seconds
     intervalRef.current = setInterval(fetchUnreadCount, 60000);

@@ -28,6 +28,7 @@ interface NotificationData {
   userName?: string;
   
   // Generic
+  title?: string;
   message?: string;
   link?: string;
 }
@@ -75,7 +76,7 @@ export const NotificationService = {
    * Logic to determine title and message for In-App notifications
    */
   async createInAppNotification(userId: string, type: NotificationType, data: NotificationData) {
-    let title = 'แจ้งเตือนระบบ';
+    let title = data.title || 'แจ้งเตือนระบบ';
     let message = data.message || 'คุณมีการแจ้งเตือนใหม่';
     let link = data.link || '/notifications';
 

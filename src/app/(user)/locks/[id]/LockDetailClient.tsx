@@ -14,9 +14,11 @@ interface Lock {
   zone: { _id: string; name: string; description?: string };
   size: { width: number; length: number; unit: string };
   pricing: { daily: number; weekly?: number; monthly?: number };
-  status: 'available' | 'booked' | 'rented' | 'maintenance';
+  status: 'available' | 'booked' | 'rented' | 'maintenance' | 'reserved';
   images: string[];
   features: string[];
+  reservedTo?: string; // or User object
+  reservationExpiresAt?: string; // API string date
 }
 
 export default function LockDetailClient() {
@@ -288,7 +290,10 @@ export default function LockDetailClient() {
           <Card className="border-0 shadow-sm sticky-top" style={{ top: '100px' }}>
             <Card.Body className="p-4">
               <h4 className="fw-bold mb-4">
-                {lock.status === 'available' ? 'จองพื้นที่ขายของ' : 'สถานะการจอง'}
+                {lock.status === 'available' || (lock.status === 'reserved' && lock.reservedTo === session?.user?.id) 
+                  ? 'จองพื้นที่ขายของ' 
+                  : (lock.status === 'reserved' ? 'ล็อกนี้ติดจอง (คิว)' : 'สถานะการจอง')
+                }
               </h4>
               
               <div className="bg-primary bg-opacity-10 p-3 rounded-3 mb-4 text-primary">
@@ -296,7 +301,23 @@ export default function LockDetailClient() {
                 <div className="h2 fw-bold mb-0 text-primary">฿{lock.pricing.daily.toLocaleString()} <span className="small text-muted fw-normal">/วัน</span></div>
               </div>
 
-              {lock.status === 'available' ? (
+              {/* Show Reservation countdown if reserved for me */}
+              {lock.status === 'reserved' && lock.reservedTo === session?.user?.id && (
+                  <Alert variant="info" className="mb-4">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-clock-history fs-3 me-3"></i>
+                      <div>
+                        <strong>ถึงคิวของคุณแล้ว!</strong>
+                        <div className="small">
+                          สิทธิ์การจองของคุณจะหมดเวลาใน<br/>
+                          {lock.reservationExpiresAt && new Date(lock.reservationExpiresAt).toLocaleString('th-TH')}
+                        </div>
+                      </div>
+                    </div>
+                  </Alert>
+              )}
+
+              {lock.status === 'available' || (lock.status === 'reserved' && lock.reservedTo === session?.user?.id) ? (
                 <Form onSubmit={handleBooking}>
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-bold">เลือกรูปแบบการเช่า</Form.Label>

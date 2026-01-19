@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Container, Row, Col, Card, Form, Button, Badge, InputGroup, Spinner, Placeholder } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Badge, InputGroup, Placeholder } from 'react-bootstrap';
 import Link from 'next/link';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,86 +146,97 @@ export default function LockBrowsingPage() {
         <p className="text-muted">เลือกทำเลที่ต้องการและจองพื้นที่ขายของออนไลน์ได้ทันที</p>
       </div>
 
-      <Row>
-        {/* Filters Sidebar */}
-        <Col lg={3} className="mb-4">
-          <Card className="border-0 shadow-sm sticky-top" style={{ top: '100px', zIndex: 10 }}>
-            <Card.Body className="p-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold mb-0">ตัวกรอง</h5>
-                <Button variant="link" size="sm" className="text-decoration-none p-0" onClick={clearFilters}>
-                  ล้างทั้งหมด
-                </Button>
-              </div>
-
-              <Form.Group className="mb-4">
-                <Form.Label className="small fw-bold text-uppercase text-muted">โซน</Form.Label>
+      {/* Top Filter Bar */}
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Body className="p-3">
+          <Row className="g-2 align-items-center">
+            {/* Zone Filter */}
+            <Col xs={12} md={3} lg={2}>
+              <InputGroup size="sm">
+                <InputGroup.Text className="bg-light border-0"><i className="bi bi-geo-alt text-muted"></i></InputGroup.Text>
                 <Form.Select 
                   value={selectedZone} 
                   onChange={(e) => setSelectedZone(e.target.value)}
-                  className="bg-light border-0 py-2"
+                  className="bg-light border-0 shadow-none fw-medium"
                 >
                   <option value="">ทุกโซน</option>
                   {zones.map(z => <option key={z._id} value={z._id}>{z.name}</option>)}
                 </Form.Select>
-              </Form.Group>
+              </InputGroup>
+            </Col>
 
-              <Form.Group className="mb-4">
-                <Form.Label className="small fw-bold text-uppercase text-muted">ช่วงราคา (รายวัน)</Form.Label>
-                <div className="d-flex gap-2">
-                  <Form.Control 
-                    placeholder="ต่ำสุด" 
-                    type="number" 
-                    className="bg-light border-0 py-2 sm"
-                    value={priceRange.min}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                  />
-                  <Form.Control 
-                    placeholder="สูงสุด" 
-                    type="number" 
-                    className="bg-light border-0 py-2 sm"
-                    value={priceRange.max}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                  />
-                </div>
-              </Form.Group>
-
-              <Form.Group className="mb-4">
-                <Form.Label className="small fw-bold text-uppercase text-muted">สถานะ</Form.Label>
+            {/* Status Filter */}
+            <Col xs={12} md={3} lg={2}>
+              <InputGroup size="sm">
+                <InputGroup.Text className="bg-light border-0"><i className="bi bi-info-circle text-muted"></i></InputGroup.Text>
                 <Form.Select 
                   value={statusFilter} 
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-light border-0 py-2"
+                  className="bg-light border-0 shadow-none fw-medium"
                 >
-                  <option value="">ทั้งหมด</option>
-                  <option value="available">พร้อมให้จอง</option>
+                  <option value="">ทุกสถานะ</option>
+                  <option value="available">ว่าง</option>
                   <option value="booked">จองแล้ว</option>
+                  <option value="rented">เช่าแล้ว</option>
+                  <option value="maintenance">ปรับปรุง</option>
                 </Form.Select>
-              </Form.Group>
+              </InputGroup>
+            </Col>
 
-              <Form.Group className="mb-4">
-                <Form.Check 
-                  type="switch"
-                  id="favorites-switch"
-                  label="แสดงเฉพาะที่ติดตาม"
-                  checked={showFavoritesOnly}
-                  onChange={(e) => setShowFavoritesOnly(e.target.checked)}
-                  className="small fw-bold text-muted text-uppercase"
+            {/* Price Range */}
+            <Col xs={12} md={4} lg={3}>
+              <InputGroup size="sm">
+                <InputGroup.Text className="bg-light border-0">฿</InputGroup.Text>
+                <Form.Control 
+                  placeholder="ต่ำสุด" 
+                  type="number" 
+                  className="bg-light border-0 shadow-none text-center"
+                  value={priceRange.min}
+                  onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
                 />
-              </Form.Group>
+                <InputGroup.Text className="bg-light border-0 px-1">-</InputGroup.Text>
+                <Form.Control 
+                  placeholder="สูงสุด" 
+                  type="number" 
+                  className="bg-light border-0 shadow-none text-center"
+                  value={priceRange.max}
+                  onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                />
+              </InputGroup>
+            </Col>
 
-              <Button variant="primary" className="w-100 py-2 fw-bold" onClick={fetchLocks}>
-                <i className="bi bi-funnel me-2"></i> กรองผลการค้นหา
+            {/* Favorites Toggle */}
+            <Col xs={6} md={2} lg={2}>
+              <Button 
+                variant={showFavoritesOnly ? "danger" : "light"}
+                size="sm"
+                className={`w-100 fw-medium d-flex align-items-center justify-content-center gap-2 ${showFavoritesOnly ? '' : 'text-muted'}`}
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              >
+                <i className={`bi ${showFavoritesOnly ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                <span className="d-none d-sm-inline">ที่ติดตาม</span>
               </Button>
-            </Card.Body>
-          </Card>
-        </Col>
+            </Col>
 
-        {/* Lock Grid */}
-        <Col lg={9}>
+            {/* Action Buttons */}
+            <Col xs={6} md={12} lg={3} className="d-flex gap-2 justify-content-end">
+              <Button variant="primary" size="sm" className="flex-grow-1 flex-lg-grow-0 fw-medium px-3" onClick={fetchLocks}>
+                <i className="bi bi-search me-1"></i> ค้นหา
+              </Button>
+              <Button variant="outline-secondary" size="sm" onClick={clearFilters} title="ล้างค่าทั้งหมด">
+                  <i className="bi bi-arrow-counterclockwise"></i>
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* Lock Grid */}
+      <Row>
+        <Col xs={12}>
           {loading ? (
-            <Row xs={1} md={2} xl={3} className="g-4">
-              {[1, 2, 3, 4, 5, 6].map(i => (
+            <Row xs={1} md={2} lg={3} xl={4} className="g-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <Col key={i}>
                   <Card className="border-0 shadow-sm h-100 overflow-hidden">
                     <div className="placeholder-glow">
@@ -251,7 +262,7 @@ export default function LockBrowsingPage() {
               <Button variant="outline-primary" onClick={clearFilters}>ล้างตัวกรองทั้งหมด</Button>
             </div>
           ) : (
-            <Row xs={1} md={2} xl={3} className="g-4">
+            <Row xs={1} md={2} lg={3} xl={4} className="g-4">
               {displayedLocks.map((lock) => (
                 <Col key={lock._id}>
                   <Card className="border-0 shadow-sm h-100 overflow-hidden hover-lift card-hover transition-300 position-relative">
