@@ -40,7 +40,7 @@ export default function MyBookingsPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
   
-  const [activeTab, setActiveTab] = useState<'bookings' | 'queues'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'queues' | 'history'>('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [queues, setQueues] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,9 +150,20 @@ export default function MyBookingsPage() {
     const lockNum = b.lock?.lockNumber || '';
     const zoneName = b.lock?.zone?.name || '';
     const matchSearch = lockNum.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = statusFilter === 'all' || b.status === statusFilter;
     const matchZone = zoneFilter === 'all' || zoneName === zoneFilter;
-    return matchSearch && matchStatus && matchZone;
+
+    // Separate logic for active vs history tabs
+    const isActiveStatus = ['pending_payment', 'pending_verification', 'active'].includes(b.status);
+    const isHistoryStatus = ['expired', 'cancelled'].includes(b.status);
+
+    let matchStatus = false;
+    if (activeTab === 'bookings') {
+      matchStatus = isActiveStatus && (statusFilter === 'all' || b.status === statusFilter);
+    } else if (activeTab === 'history') {
+      matchStatus = isHistoryStatus && (statusFilter === 'all' || b.status === statusFilter);
+    }
+
+    return matchSearch && matchZone && matchStatus;
   });
 
   const filteredQueues = queues.filter(q => {
@@ -176,13 +187,13 @@ export default function MyBookingsPage() {
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
           <h2 className="fw-bold m-0 text-dark">
-            <i className={`bi ${activeTab === 'bookings' ? 'bi-calendar-check' : 'bi-people-fill'} text-primary me-2`}></i>
-            {activeTab === 'bookings' ? 'การจองของฉัน' : 'รายการจองคิว'}
+            <i className={`bi ${activeTab === 'bookings' ? 'bi-calendar-check' : activeTab === 'queues' ? 'bi-people-fill' : 'bi-clock-history'} text-primary me-2`}></i>
+            {activeTab === 'bookings' ? 'การเช่าของฉัน' : activeTab === 'queues' ? 'รายการจองคิว' : 'ประวัติการเช่า'}
           </h2>
-          <p className="text-muted mb-0">จัดการรายการจองและลำดับคิวของคุณทั้งหมดได้ที่นี่</p>
+          <p className="text-muted mb-0">จัดการรายการเช่า ลำดับคิว และประวัติการเช่าของคุณได้ที่นี่</p>
         </div>
         <Button as={LinkAny} href="/locks" variant="primary" className="fw-bold shadow-sm rounded-pill px-4">
-          <i className="bi bi-plus-lg me-2"></i> จองล็อกเพิ่ม
+          <i className="bi bi-plus-lg me-2"></i> เช่าล็อกเพิ่ม
         </Button>
       </div>
 
@@ -193,20 +204,20 @@ export default function MyBookingsPage() {
             <Nav.Item className="flex-grow-1">
               <Nav.Link 
                 eventKey="bookings" 
-                onClick={() => setActiveTab('bookings')}
+                onClick={() => { setActiveTab('bookings'); setStatusFilter('all'); }}
                 className={`text-center py-3 fw-bold border-0 rounded-0 ${activeTab === 'bookings' ? 'bg-white text-primary' : 'text-muted'}`}
                 style={{ 
                   borderBottom: activeTab === 'bookings' ? '4px solid var(--bs-primary)' : 'none',
                   backgroundColor: activeTab === 'bookings' ? '#fff' : 'transparent'
                 }}
               >
-                การจอง ({bookings.length})
+                การเช่า ({(bookings.filter(b => ['pending_payment', 'pending_verification', 'active'].includes(b.status))).length})
               </Nav.Link>
             </Nav.Item>
             <Nav.Item className="flex-grow-1">
               <Nav.Link 
                 eventKey="queues" 
-                onClick={() => setActiveTab('queues')}
+                onClick={() => { setActiveTab('queues'); setStatusFilter('all'); }}
                 className={`text-center py-3 fw-bold border-0 rounded-0 ${activeTab === 'queues' ? 'bg-white text-primary' : 'text-muted'}`}
                 style={{ 
                   borderBottom: activeTab === 'queues' ? '4px solid var(--bs-primary)' : 'none',
@@ -214,6 +225,19 @@ export default function MyBookingsPage() {
                 }}
               >
                 จองคิว ({queues.length})
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item className="flex-grow-1">
+              <Nav.Link 
+                eventKey="history" 
+                onClick={() => { setActiveTab('history'); setStatusFilter('all'); }}
+                className={`text-center py-3 fw-bold border-0 rounded-0 ${activeTab === 'history' ? 'bg-white text-primary' : 'text-muted'}`}
+                style={{ 
+                  borderBottom: activeTab === 'history' ? '4px solid var(--bs-primary)' : 'none',
+                  backgroundColor: activeTab === 'history' ? '#fff' : 'transparent'
+                }}
+              >
+                ประวัติ ({(bookings.filter(b => ['expired', 'cancelled'].includes(b.status))).length})
               </Nav.Link>
             </Nav.Item>
           </Nav>
@@ -224,7 +248,7 @@ export default function MyBookingsPage() {
       <Card className="border-0 shadow-sm mb-4 rounded-4" style={{ borderLeft: '5px solid var(--bs-primary)' }}>
         <Card.Body className="p-3">
           <Row className="g-3">
-            <Col xs={12} md={activeTab === 'bookings' ? 4 : 6}>
+            <Col xs={12} md={activeTab === 'queues' ? 6 : 4}>
               <InputGroup className="border rounded-3 overflow-hidden">
                 <InputGroup.Text className="bg-white border-0">
                   <i className="bi bi-search text-muted"></i>
@@ -240,7 +264,7 @@ export default function MyBookingsPage() {
                 />
               </InputGroup>
             </Col>
-            <Col xs={12} md={activeTab === 'bookings' ? 4 : 6}>
+            <Col xs={12} md={activeTab === 'queues' ? 6 : 4}>
               <Form.Select 
                 className="border rounded-3 py-2 shadow-none"
                 value={zoneFilter}
@@ -252,7 +276,7 @@ export default function MyBookingsPage() {
                 ))}
               </Form.Select>
             </Col>
-            {activeTab === 'bookings' && (
+            {activeTab !== 'queues' && (
               <Col xs={12} md={4}>
                 <Form.Select 
                   className="border rounded-3 py-2 shadow-none"
@@ -260,11 +284,18 @@ export default function MyBookingsPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="all">สถานะทั้งหมด</option>
-                  <option value="pending_payment">รอชำระเงิน</option>
-                  <option value="pending_verification">รอตรวจสอบ</option>
-                  <option value="active">ใช้งานอยู่</option>
-                  <option value="expired">หมดอายุ</option>
-                  <option value="cancelled">ยกเลิกแล้ว</option>
+                  {activeTab === 'bookings' ? (
+                    <>
+                      <option value="pending_payment">รอชำระเงิน</option>
+                      <option value="pending_verification">รอตรวจสอบ</option>
+                      <option value="active">ใช้งานอยู่</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="expired">หมดอายุ</option>
+                      <option value="cancelled">ยกเลิกแล้ว</option>
+                    </>
+                  )}
                 </Form.Select>
               </Col>
             )}
@@ -274,15 +305,15 @@ export default function MyBookingsPage() {
 
       {error && <Alert variant="danger" className="border-0 shadow-sm rounded-3 mb-4">{error}</Alert>}
 
-      {activeTab === 'bookings' ? (
+      {activeTab === 'bookings' || activeTab === 'history' ? (
         <>
           {filteredBookings.length === 0 ? (
             <div className="text-center py-5 bg-white rounded-4 shadow-sm border mt-3">
               <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style={{ width: '100px', height: '100px' }}>
                 <i className="bi bi-calendar-x display-4 text-muted"></i>
               </div>
-              <h3 className="fw-bold">ไม่พบรายการจอง</h3>
-              <p className="text-muted mb-4">คุณยังไม่มีรายการจองตามเงื่อนไขที่ระบุ</p>
+              <h3 className="fw-bold">ไม่พบรายการเช่า</h3>
+              <p className="text-muted mb-4">คุณยังไม่มีรายการเช่าตามเงื่อนไขที่ระบุ</p>
               <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setZoneFilter('all'); }} variant="outline-primary" className="rounded-pill px-4">ล้างตัวกรอง</Button>
             </div>
           ) : (
@@ -305,7 +336,7 @@ export default function MyBookingsPage() {
                       <div className="p-3 bg-light rounded-3 mb-3 border border-dashed">
                         <Row className="g-2 text-center">
                           <Col xs={6} className="border-end">
-                            <div className="text-muted text-uppercase mb-1" style={{ fontSize: '0.65rem' }}>วันที่เริ่ม จอง</div>
+                            <div className="text-muted text-uppercase mb-1" style={{ fontSize: '0.65rem' }}>วันที่เริ่มเช่า</div>
                             <div className="fw-bold small">{new Date(booking.startDate).toLocaleDateString('th-TH')}</div>
                           </Col>
                           <Col xs={6}>
