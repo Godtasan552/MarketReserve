@@ -271,7 +271,7 @@ export default function LoginForm() {
 
 ---
 
-## Phase 2: Core Features (สัปดาห์ 3-5) - **In Progress**
+## Phase 2: Core Features (สัปดาห์ 3-5) - **Completed**
 ### UI & Localization (Updated)
 **สำคัญ**: เพื่อให้ระบบเข้าถึงผู้ใช้ทุกวัย (25 - 60+ ปี) อินเทอร์เฟซทั้งหมดจะถูกปรับเป็น **ภาษาไทย** ที่เข้าใจง่ายและใช้ฟอนต์ **Noto Sans Thai** ที่อ่านง่าย
 
@@ -312,9 +312,11 @@ export default function LoginForm() {
 - [x] Separate Admin Login UI (Thai)
 - [x] Staff Management (List & Create)
 - [x] Admin Dashboard (Basic Stats)
-- [ ] Lock CRUD UI (รวมช่องรายละเอียด Description)
-- [ ] Zone CRUD UI
-- [ ] Image upload to Cloudinary (Integration)
+- [x] Lock CRUD UI (รวมช่องรายละเอียด Description)
+- [x] Zone CRUD UI
+- [x] Image upload to Cloudinary (Integration)
+- [x] Search & Filter Sanitization (Sanitize alphanumeric, Thai, and symbols)
+- [x] Defensive Pricing (Prevent negative price inputs)
 
 
 #### Day 3-5: User Lock Browsing
@@ -353,11 +355,11 @@ export default function AvailabilityCalendar({ lockId }) {
 ```
 
 **Checklist**:
-- [ ] Lock listing page
-- [ ] Lock detail page
-- [ ] Availability calendar
-- [ ] Filter & search functionality
-- [ ] Responsive image gallery
+- [x] Lock listing page (Rentals/Queues/History tabs)
+- [x] Lock detail page
+- [x] Availability calendar (Reservation countdown)
+- [x] Filter & search functionality (Sanitized)
+- [x] Responsive image gallery
 
 ### Week 4-5: Booking System
 
@@ -579,19 +581,20 @@ export async function GET(req: NextRequest) {
 ```
 
 **Checklist**:
-- [ ] Booking creation with transaction
-- [ ] Overlap detection
-- [ ] Payment upload to Cloudinary
-- [ ] OCR processing (Tesseract.js)
-- [ ] Payment verification UI (Admin)
-- [ ] Cron jobs for timeout (Idempotent check)
-- [ ] Rate limiting:
-    - User: Max 3 `pending_payment` bookings at the same time
-    - User: Max 5 total bookings per user (Limit to prevent spam/scalping)
+- [x] Booking creation with transaction
+- [x] Overlap detection
+- [x] Payment upload to Cloudinary
+- [x] OCR processing (Tesseract.js)
+- [x] Payment verification UI (Admin)
+- [x] Cron jobs for timeout (Idempotent check)
+- [x] Rate limiting:
+    - [x] User: Prevent joining queue if has active/pending booking for the same lock
+    - [x] Admin: Auto-clear queue on payment approval
+    - [x] Global: Price & Search input sanitization
 
 ---
 
-## Phase 3: Advanced Features (สัปดาห์ 6-7)
+## Phase 3: Advanced Features (สัปดาห์ 6-7) - **In Progress**
 
 ### Week 6: Notification System (Refined: Event-based)
 
