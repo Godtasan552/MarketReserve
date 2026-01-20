@@ -13,6 +13,7 @@ export interface ILock extends Document {
     weekly: number;
     monthly: number;
   };
+  description?: string;
   images: string[];
   status: 'available' | 'booked' | 'rented' | 'maintenance' | 'reserved';
   features: string[];
@@ -36,6 +37,7 @@ const lockSchema = new Schema<ILock>({
     weekly: { type: Number },
     monthly: { type: Number }
   },
+  description: { type: String },
   images: [{ type: String }],
   status: { 
     type: String, 

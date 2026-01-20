@@ -212,6 +212,22 @@ export default function LockForm({ initialData, onSubmit, onCancel }: LockFormPr
         </Col>
       </Row>
 
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-bold">คำอธิบาย/รายละเอียด (Description)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="ระบุรายละเอียดเพิ่มเติมเกี่ยวกับล็อกนี้..."
+              {...register('description')}
+              isInvalid={!!errors.description}
+            />
+            <Form.Control.Feedback type="invalid">{errors.description?.message}</Form.Control.Feedback>
+          </Form.Group>
+        </Col>
+      </Row>
+
       <div className="mb-4">
         <h6 className="fw-bold text-primary mb-3"><i className="bi bi-aspect-ratio me-2"></i>ขนาดพื้นที่</h6>
         <Row>

@@ -13,6 +13,7 @@ export const lockSchema = z.object({
     weekly: z.number().optional(),
     monthly: z.number().optional(),
   }),
+  description: z.string().optional(),
   status: z.enum(['available', 'booked', 'rented', 'maintenance']).default('available'),
   features: z.array(z.string()).optional(),
   images: z.array(z.string()).optional(),

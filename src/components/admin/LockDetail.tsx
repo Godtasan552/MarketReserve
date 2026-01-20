@@ -4,7 +4,7 @@ import { Badge, Row, Col, Card, Carousel } from 'react-bootstrap';
 import { Lock } from './LockList';
 
 interface LockDetailProps {
-  lock: Lock & { images?: string[]; features?: string[] };
+  lock: Lock & { images?: string[]; features?: string[]; description?: string };
 }
 
 export default function LockDetail({ lock }: LockDetailProps) {
@@ -112,18 +112,14 @@ export default function LockDetail({ lock }: LockDetailProps) {
             </Card.Body>
           </Card>
 
-          {lock.features && lock.features.length > 0 && (
-            <div>
-              <h6 className="fw-bold mb-3"><i className="bi bi-stars me-2 text-warning"></i>คุณสมบัติเพิ่มเติม</h6>
-              <div className="d-flex flex-wrap gap-2">
-                {lock.features.map((feature, i) => (
-                  <Badge key={i} bg="info" className="fw-normal text-dark">
-                    {feature}
-                  </Badge>
-                ))}
-              </div>
+          {lock.description && (
+            <div className="mb-4">
+               <h6 className="fw-bold mb-2"><i className="bi bi-info-circle me-2 text-primary"></i>รายละเอียดเพิ่มเติม</h6>
+               <p className="text-muted" style={{ whiteSpace: 'pre-wrap' }}>{lock.description}</p>
             </div>
           )}
+
+
         </Col>
       </Row>
     </div>

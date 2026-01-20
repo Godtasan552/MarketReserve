@@ -12,6 +12,7 @@ export interface Lock {
   isActive: boolean;
   images?: string[];
   features?: string[];
+  description?: string;
 }
 
 interface LockListProps {

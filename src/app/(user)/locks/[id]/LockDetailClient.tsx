@@ -17,6 +17,7 @@ interface Lock {
   status: 'available' | 'booked' | 'rented' | 'maintenance' | 'reserved';
   images: string[];
   features: string[];
+  description?: string;
   reservedTo?: string; // or User object
   reservationExpiresAt?: string; // API string date
 }
@@ -254,7 +255,7 @@ export default function LockDetailClient() {
               </h5>
               
               <Row className="mb-4">
-                <Col md={6}>
+                <Col md={12}>
                   <div className="p-3 bg-light rounded-3 border h-100">
                     <h6 className="small fw-bold text-uppercase text-muted mb-2">ข้อมูลพื้นที่</h6>
                     <div className="d-flex align-items-center mb-2">
@@ -266,19 +267,14 @@ export default function LockDetailClient() {
                     </div>
                   </div>
                 </Col>
-                <Col md={6}>
-                   <div className="p-3 bg-light rounded-3 border h-100">
-                    <h6 className="small fw-bold text-uppercase text-muted mb-2">สิ่งอำนวยความสะดวก</h6>
-                    <div className="d-flex flex-wrap gap-2">
-                      {lock.features && lock.features.length > 0 ? (
-                        lock.features.map((f, i) => <Badge key={i} bg="white" text="dark" className="border">{f}</Badge>)
-                      ) : (
-                        <span className="text-muted small">ไม่มีข้อมูล</span>
-                      )}
-                    </div>
-                  </div>
-                </Col>
               </Row>
+
+              {lock.description && (
+                <div className="mb-4">
+                  <h5 className="fw-bold mb-3">รายละเอียดเพิ่มเติม</h5>
+                  <p className="text-muted" style={{ whiteSpace: 'pre-wrap' }}>{lock.description}</p>
+                </div>
+              )}
 
               <h5 className="fw-bold mb-3">รายละเอียดโซน</h5>
               <p className="text-muted mb-0">{lock.zone?.description || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
