@@ -43,6 +43,7 @@ export default function BookingDetailPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   
   // OCR Client States
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -237,7 +238,7 @@ export default function BookingDetailPage() {
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const handleUploadPayment = async () => {
     if (!file || !id) {
       showAlert('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกไฟล์สลิปการโอนเงิน', 'warning');
@@ -279,6 +280,37 @@ export default function BookingDetailPage() {
       setFile(null);
       setPreview(null);
       setOcrResult(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    const { isConfirmed } = await (await import('@/lib/swal')).showConfirm(
+        'ยืนยันการยกเลิก',
+        'คุณต้องการยกเลิกการจองนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+        'ยืนยันการยกเลิก',
+        'ไม่ ยกเลิก'
+    );
+
+    if (!isConfirmed || !id) return;
+
+    setCancelling(true);
+    try {
+        const res = await fetch(`/api/bookings/${id}`, {
+            method: 'DELETE',
+        });
+
+        if (res.ok) {
+            await showAlert('สำเร็จ', 'ยกเลิกการจองเรียบร้อยแล้ว', 'success');
+            router.push('/my-bookings');
+        } else {
+            const result = await res.json();
+            showAlert('ผิดพลาด', result.error || 'ไม่สามารถยกเลิกการจองได้', 'error');
+        }
+    } catch (e: unknown) {
+        console.error(e);
+        showAlert('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    } finally {
+        setCancelling(false);
     }
   };
 
@@ -357,6 +389,23 @@ export default function BookingDetailPage() {
                 <span className="h5 fw-bold text-muted">ยอดที่ต้องชำระทั้งหมด</span>
                 <span className="h3 fw-bold text-primary">฿{booking.totalAmount.toLocaleString()}</span>
               </div>
+
+              {['pending_payment', 'pending_verification'].includes(booking.status) && (
+                <div className="mt-4 pt-3 border-top text-end">
+                    <Button 
+                        variant="link" 
+                        className="text-danger text-decoration-none small"
+                        onClick={handleCancel}
+                        disabled={cancelling || uploading}
+                    >
+                        {cancelling ? (
+                            <><Spinner animation="border" size="sm" className="me-2" /> กำลังยกเลิก...</>
+                        ) : (
+                            <><i className="bi bi-x-circle me-1"></i> ยกเลิกการจองนี้</>
+                        )}
+                    </Button>
+                </div>
+              )}
             </Card.Body>
           </Card>
 

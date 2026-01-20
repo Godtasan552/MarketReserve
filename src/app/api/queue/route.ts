@@ -9,13 +9,40 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const lockId = searchParams.get('lockId');
+    const myQueues = searchParams.get('my');
+
+    await connectDB();
+    const session = await auth();
+
+    if (myQueues === 'true') {
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const queues = await Queue.find({ user: session.user.id })
+        .populate({
+          path: 'lock',
+          populate: { path: 'zone' }
+        })
+        .sort({ createdAt: -1 });
+      
+      // Calculate position for each queue
+      const queuesWithPosition = await Promise.all(queues.map(async (q) => {
+        const position = await Queue.countDocuments({ 
+          lock: q.lock._id, 
+          createdAt: { $lt: q.createdAt } 
+        });
+        return {
+          ...q.toObject(),
+          userPosition: position + 1
+        };
+      }));
+
+      return NextResponse.json(queuesWithPosition);
+    }
 
     if (!lockId) {
       return NextResponse.json({ error: 'Lock ID required' }, { status: 400 });
     }
-
-    await connectDB();
-    const session = await auth();
 
     // Get total count
     const count = await Queue.countDocuments({ lock: lockId });

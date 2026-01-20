@@ -38,6 +38,9 @@ export default function UserLayout({
                   <Nav.Link as={LinkAny} href="/my-bookings" active={pathname === '/my-bookings'} className="fw-medium">
                       การจองของฉัน
                   </Nav.Link>
+                  <Nav.Link as={LinkAny} href="/my-queues" active={pathname === '/my-queues'} className="fw-medium">
+                      รายการจองคิว
+                  </Nav.Link>
                   <Nav.Link as={LinkAny} href="/bookmarks" active={pathname === '/bookmarks'} className="fw-medium">
                       รายการที่บันทึก
                   </Nav.Link>
