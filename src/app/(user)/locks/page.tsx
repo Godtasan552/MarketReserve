@@ -201,17 +201,25 @@ export default function LockBrowsingPage() {
                 <Form.Control 
                   placeholder="ต่ำสุด" 
                   type="number" 
+                  min="0"
                   className="bg-light border-0 shadow-none text-center"
                   value={priceRange.min}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setPriceRange(prev => ({ ...prev, min: val }))
+                  }}
                 />
                 <InputGroup.Text className="bg-light border-0 px-1 border-start border-end">-</InputGroup.Text>
                 <Form.Control 
                   placeholder="สูงสุด" 
                   type="number" 
+                  min="0"
                   className="bg-light border-0 shadow-none text-center"
                   value={priceRange.max}
-                  onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setPriceRange(prev => ({ ...prev, max: val }))
+                  }}
                 />
               </InputGroup>
             </Col>

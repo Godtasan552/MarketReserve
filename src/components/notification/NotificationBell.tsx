@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dropdown, Badge } from 'react-bootstrap';
 import NotificationList from './NotificationList';
 import { useSession } from 'next-auth/react';
@@ -9,11 +9,8 @@ export default function NotificationBell() {
   const { data: session } = useSession();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const userId = session?.user?.id;
 
-  // Memoize to use in useEffect
   const fetchUnreadCount = useCallback(async () => {
     if (!userId) return;
     try {
@@ -27,38 +24,65 @@ export default function NotificationBell() {
     }
   }, [userId]);
 
+  // Handle both initial fetch and Real-time SSE in one effect to keep hooks stable
   useEffect(() => {
-    const init = async () => {
-      await fetchUnreadCount();
-    };
-    init();
+    if (!userId) return;
     
-    // Poll every 60 seconds
-    intervalRef.current = setInterval(fetchUnreadCount, 60000);
+    // Function to fetch initial count
+    const getInitialCount = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
+    // Trigger initial fetch
+    void getInitialCount();
+
+    // SSE Setup
+    const eventSource = new EventSource('/api/notifications/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const notification = JSON.parse(event.data);
+        if (notification) {
+            setUnreadCount(prev => prev + 1);
+        }
+      } catch (err) {
+        console.error('Error parsing notification from SSE:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE Error:', err);
+      eventSource.close();
+    };
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      eventSource.close();
     };
+  }, [userId]);
+
+  const handleToggle = useCallback((nextShow: boolean) => {
+    setIsOpen(nextShow);
+    if (!nextShow) {
+        // When closing, refresh count once to be sure
+        void fetchUnreadCount();
+    }
   }, [fetchUnreadCount]);
 
-  const handleToggle = (nextShow: boolean) => {
-    setIsOpen(nextShow);
-    if (nextShow) {
-      // Just opened
-    } else {
-        // Closed, refresh count
-        fetchUnreadCount();
-    }
-  };
-
-  const handleRead = () => {
-    // When read, decrement local count or fetch again
+  const handleRead = useCallback(() => {
     setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
   
-  const handleReadAll = () => {
+  const handleReadAll = useCallback(() => {
       setUnreadCount(0);
-  }
+  }, []);
 
   if (!session) return null;
 

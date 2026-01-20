@@ -130,7 +130,10 @@ export default function LockManagementPage() {
                         <Form.Control
                             placeholder="ค้นหาด้วยรหัสล็อก..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/[^a-zA-Z0-9\s-]/g, '');
+                                setSearchTerm(val);
+                            }}
                             className="bg-light border-0 shadow-none fw-medium"
                         />
                         <Button variant="primary" type="submit" className="border-0">

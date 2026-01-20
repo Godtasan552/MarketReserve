@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
 import Queue from '@/models/Queue';
+import Booking from '@/models/Booking';
 import { auth } from '@/lib/auth/auth';
 
 // GET: Get queue info for a specific lock (count, and if user is in it + position)
@@ -49,8 +50,17 @@ export async function GET(req: Request) {
 
     let userPosition = null;
     let inQueue = false;
+    let hasActiveBooking = false;
 
     if (session?.user?.id) {
+      // Check for active/pending bookings
+      const existingBooking = await Booking.findOne({
+        lock: lockId,
+        user: session.user.id,
+        status: { $in: ['pending_payment', 'pending_verification', 'active'] }
+      });
+      if (existingBooking) hasActiveBooking = true;
+
       // Check if user is in queue
       const userQueueEntry = await Queue.findOne({ lock: lockId, user: session.user.id });
       
@@ -65,7 +75,7 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ count, inQueue, userPosition });
+    return NextResponse.json({ count, inQueue, userPosition, hasActiveBooking });
   } catch (error) {
     console.error('Error fetching queue info:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -87,6 +97,19 @@ export async function POST(req: Request) {
 
     if (action === 'join') {
         try {
+            // Check if user already has an active or pending booking for this lock
+            const existingBooking = await Booking.findOne({
+                lock: lockId,
+                user: session.user.id,
+                status: { $in: ['pending_payment', 'pending_verification', 'active'] }
+            });
+
+            if (existingBooking) {
+                return NextResponse.json({ 
+                    error: 'คุณมีการจองล็อกนี้อยู่แล้ว ไม่สามารถจองคิวเพิ่มได้' 
+                }, { status: 400 });
+            }
+
             // Check if already exists to avoid unique error if race condition
             const exists = await Queue.findOne({ lock: lockId, user: session.user.id });
             if (!exists) {

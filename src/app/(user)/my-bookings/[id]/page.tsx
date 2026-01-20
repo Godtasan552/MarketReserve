@@ -9,6 +9,7 @@ import Tesseract from 'tesseract.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LinkAny = Link as any;
+import CountdownTimer from '@/components/common/CountdownTimer';
 import { showAlert } from '@/lib/swal';
 
 interface Booking {
@@ -435,9 +436,20 @@ export default function BookingDetailPage() {
             <Card className="border-0 shadow-sm mb-4 border-top border-primary border-4">
               <Card.Body className="p-4">
                 <h4 className="fw-bold mb-3">ชำระเงิน</h4>
-                <div className="alert alert-warning border-0 small mb-4">
-                  <i className="bi bi-clock-history me-2"></i>
-                  กรุณาชำระเงินภายใน: <strong>{new Date(booking.paymentDeadline).toLocaleString('th-TH')}</strong>
+                <div className="alert alert-warning border-0 small mb-4 py-3 shadow-sm bg-warning bg-opacity-10 text-dark">
+                  <div className="d-flex align-items-center">
+                    <div className="bg-warning bg-opacity-25 rounded-circle p-2 me-3">
+                      <i className="bi bi-clock-history fs-4 text-dark"></i>
+                    </div>
+                    <div>
+                      <div className="fw-bold mb-1">กรุณาชำระเงินภายในเวลาที่กำหนด</div>
+                      <div className="mb-2 text-muted small">หากชำระไม่ทันภายในเวลา คิวจะหลุดและสิทธิ์จะตกเป็นของคนถัดไป</div>
+                      <CountdownTimer 
+                        expiryDate={booking.paymentDeadline} 
+                        onExpire={() => fetchBooking()}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mb-4">

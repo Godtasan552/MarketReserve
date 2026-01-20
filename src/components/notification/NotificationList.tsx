@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ListGroup, Button, Spinner } from 'react-bootstrap';
 import Link from 'next/link';
 
@@ -23,9 +23,10 @@ export default function NotificationList({ onRead, onReadAll }: NotificationList
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async (isInitial = false) => {
+    // Only fetch if not loading OR if it's the very first load
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const res = await fetch('/api/notifications');
       if (res.ok) {
         const data = await res.json();
@@ -34,13 +35,13 @@ export default function NotificationList({ onRead, onReadAll }: NotificationList
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
-  };
+  }, []); // Remove changing dependencies to break the loop
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    fetchNotifications(true);
+  }, [fetchNotifications]);
 
   const markAsRead = async (id: string, currentlyRead: boolean) => {
     if (!currentlyRead) {

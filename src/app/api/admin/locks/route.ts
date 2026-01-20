@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
     if (zone) query.zone = zone;
     if (status) query.status = status;
     if (search) {
-      query.lockNumber = { $regex: search, $options: 'i' };
+      // Strip special characters to avoid regex injection
+      const sanitizedSearch = search.replace(/[^a-zA-Z0-9\s-]/g, '');
+      query.lockNumber = { $regex: sanitizedSearch, $options: 'i' };
     }
 
     const locks = await Lock.find(query).populate('zone').sort({ lockNumber: 1 });

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import NextLink from 'next/link';
+import CountdownTimer from '@/components/common/CountdownTimer';
 import { showAlert } from '@/lib/swal';
 
 interface Lock {
@@ -40,7 +41,7 @@ export default function LockDetailClient() {
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   // Queue State
-  const [queueInfo, setQueueInfo] = useState({ count: 0, inQueue: false, userPosition: null });
+  const [queueInfo, setQueueInfo] = useState({ count: 0, inQueue: false, userPosition: null, hasActiveBooking: false });
   const [queueLoading, setQueueLoading] = useState(false);
 
   const fetchQueueInfo = useCallback(async () => {
@@ -309,15 +310,20 @@ export default function LockDetailClient() {
 
               {/* Show Reservation countdown if reserved for me */}
               {lock.status === 'reserved' && lock.reservedTo === session?.user?.id && (
-                  <Alert variant="info" className="mb-4">
+                  <Alert variant="info" className="mb-4 border-0 shadow-sm bg-info bg-opacity-10 text-dark">
                     <div className="d-flex align-items-center">
-                      <i className="bi bi-clock-history fs-3 me-3"></i>
+                      <div className="bg-info bg-opacity-25 rounded-circle p-2 me-3">
+                        <i className="bi bi-clock-history fs-4 text-info"></i>
+                      </div>
                       <div>
-                        <strong>ถึงคิวของคุณแล้ว!</strong>
-                        <div className="small">
-                          สิทธิ์การจองของคุณจะหมดเวลาใน<br/>
-                          {lock.reservationExpiresAt && new Date(lock.reservationExpiresAt).toLocaleString('th-TH')}
-                        </div>
+                        <div className="fw-bold mb-1">ถึงคิวของคุณแล้ว!</div>
+                        <div className="small text-muted mb-2">กรุณาทำรายการภายในเวลาที่กำหนด</div>
+                        {lock.reservationExpiresAt && (
+                          <CountdownTimer 
+                            expiryDate={lock.reservationExpiresAt} 
+                            onExpire={() => fetchLock()}
+                          />
+                        )}
                       </div>
                     </div>
                   </Alert>
@@ -390,7 +396,7 @@ export default function LockDetailClient() {
                   </Button>
                 </div>
                 <p className="text-center small text-muted">
-                  <i className="bi bi-info-circle me-1"></i> เมื่อจองแล้ว คุณจะมีเวลา 3 ชั่วโมงในการชำระเงิน
+                  <i className="bi bi-info-circle me-1"></i> เมื่อจองแล้ว คุณจะมีเวลา 30 นาทีในการชำระเงิน
                 </p>
               </Form>
               ) : (
@@ -427,6 +433,13 @@ export default function LockDetailClient() {
                         >
                           {queueLoading ? <Spinner size="sm" animation="border" /> : 'ออกจากคิว'}
                         </Button>
+                      </div>
+                   ) : queueInfo.hasActiveBooking ? (
+                      <div className="text-center">
+                         <Alert variant="success" className="border-0 bg-success bg-opacity-10 text-success mb-0 py-3">
+                            <i className="bi bi-check-circle-fill me-2"></i>
+                            คุณมีรายการจอง/เช่าล็อกนี้อยู่แล้ว
+                         </Alert>
                       </div>
                    ) : (
                       <Button 

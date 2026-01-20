@@ -110,7 +110,11 @@ export default function AdminBookingsPage() {
                   placeholder="ค้นหาชื่อผู้จอง, อีเมล หรือรหัสล็อก..."
                   className="bg-light border-0 ps-2"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    // Allow: alphanumeric, Thai characters, spaces, dots, @, underscores, and dashes
+                    const val = e.target.value.replace(/[^a-zA-Z0-9ก-๙\s.@_-]/g, '');
+                    setSearchTerm(val);
+                  }}
                 />
               </InputGroup>
             </Col>

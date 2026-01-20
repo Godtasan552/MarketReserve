@@ -5,6 +5,7 @@ import connectDB from '@/lib/db/mongoose';
 import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
 import Lock from '@/models/Lock';
+import Queue from '@/models/Queue';
 import mongoose from 'mongoose';
 import { NotificationService } from '@/lib/notification/service';
 
@@ -30,6 +31,8 @@ export async function PUT(
     dbSession.startTransaction();
 
     let emailData = null;
+    let queuedUserIds: string[] = [];
+    let cancelledLockNumber: string = '';
 
     try {
       const payment = await Payment.findById(id).session(dbSession);
@@ -64,6 +67,18 @@ export async function PUT(
               { status: 'rented' },
               { session: dbSession }
             );
+            
+            // CLEAR QUEUE: Once someone has paid and is approved, clear the queue for everyone else
+            // 1. Fetch queued users to notify them later
+            const queuedUsers = await Queue.find({ lock: lockId }).session(dbSession);
+            // 1. Fetch queued users to notify them later
+            queuedUserIds = queuedUsers.map(q => q.user.toString());
+
+            // 2. Delete all queue entries for this lock
+            await Queue.deleteMany({ lock: lockId }, { session: dbSession });
+
+            // Store lock number for notification
+            cancelledLockNumber = booking.lock?.lockNumber || 'N/A';
 
             // Prepare email data
             // Check if user and lock are populated with expected fields
@@ -103,6 +118,19 @@ export async function PUT(
           });
         } catch (notifyErr) {
           console.error('Notification failed but payment update was successful:', notifyErr);
+        }
+      }
+
+      // Notify Queued Users
+      if (queuedUserIds.length > 0) {
+        for (const uid of queuedUserIds) {
+           try {
+              await NotificationService.send(uid, 'queue_cancelled', {
+                 lockNumber: cancelledLockNumber
+              });
+           } catch (err) {
+              console.error(`Failed to notify queued user ${uid}:`, err);
+           }
         }
       }
 

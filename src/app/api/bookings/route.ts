@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
       rentalType as RentalType
     );
 
-    // Payment deadline: 3 hours from now
+    // Payment deadline: 30 minutes from now (Updated for faster queue movement)
     const paymentDeadline = new Date();
-    paymentDeadline.setHours(paymentDeadline.getHours() + 3);
+    paymentDeadline.setMinutes(paymentDeadline.getMinutes() + 30);
 
     // Mongoose transaction to ensure atomicity
     const dbSession = await mongoose.startSession();
@@ -94,7 +94,35 @@ export async function POST(req: NextRequest) {
       );
 
       if (!updatedLock) {
-         throw new Error('Lock is no longer available (Race Condition detected)');
+         // --- RACE CONDITION DETECTED ---
+         // If someone else snatched the lock, automatically move this user to queue
+         await dbSession.abortTransaction();
+         
+         // Check if user already has an active or pending booking for this lock (unlikely but safe)
+         const existingBooking = await Booking.findOne({
+            lock: lockId,
+            user: session.user.id,
+            status: { $in: ['pending_payment', 'pending_verification', 'active'] }
+         });
+
+         if (existingBooking) {
+            return NextResponse.json({ 
+              error: 'คุณมีการจองล็อกนี้อยู่แล้ว ไม่สามารถจองคิวเพิ่มได้' 
+            }, { status: 400 });
+         }
+
+         const Queue = (await import('@/models/Queue')).default;
+         await Queue.findOneAndUpdate(
+            { lock: lockId, user: session.user.id },
+            { lock: lockId, user: session.user.id },
+            { upsert: true, new: true }
+         );
+
+         return NextResponse.json({ 
+           success: true, 
+           isQueued: true,
+           message: 'คุณจองไม่ทันเสี้ยววินาที! แต่ระบบลำดับคิวให้คุณเป็นคิวที่ 1 เพื่อรับสิทธิ์คนถัดไปแล้ว' 
+         }, { status: 200 });
       }
       
       // 3. Create Audit Log
@@ -112,7 +140,7 @@ export async function POST(req: NextRequest) {
 
       await dbSession.commitTransaction();
       
-      // Send Notification (Outside Transaction - Best Practice)
+      // Send Notification
       if (session.user?.id) {
          try {
             await NotificationService.send(session.user.id, 'booking_created', {

@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
     
     if (minPrice || maxPrice) {
       const dailyPrice: { $gte?: number; $lte?: number } = {};
-      if (minPrice) dailyPrice.$gte = Number(minPrice);
-      if (maxPrice) dailyPrice.$lte = Number(maxPrice);
+      if (minPrice) dailyPrice.$gte = Math.max(0, Number(minPrice));
+      if (maxPrice) dailyPrice.$lte = Math.max(0, Number(maxPrice));
       query['pricing.daily'] = dailyPrice;
     }
 

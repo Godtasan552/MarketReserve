@@ -10,6 +10,7 @@ export type NotificationType =
   | 'booking_rejected' 
   | 'booking_cancelled' 
   | 'booking_expiring' 
+  | 'queue_cancelled'
   | 'system';
 
 interface NotificationData {
@@ -67,6 +68,7 @@ export const NotificationService = {
       booking_rejected: true,
       booking_cancelled: true,
       booking_expiring: true,
+      queue_cancelled: true,
       system: true
     };
     return inAppPolicy[type] ?? true;
@@ -109,9 +111,14 @@ export const NotificationService = {
         title = 'สัญญาใกล้หมดอายุ';
         message = data.message || `การเช่าล็อค #${data.lockNumber} จะหมดอายุในเร็วๆ นี้`;
         break;
+      case 'queue_cancelled':
+        title = 'คิวได้รับการยกเลิก';
+        message = `คิวสำหรับล็อค #${data.lockNumber} ถูกยกเลิกเนื่องจากมีผู้เช่ารายอื่นชำระเงินเรียบร้อยแล้ว`;
+        link = '/locks'; // Or browse locks
+        break;
     }
 
-    await Notification.create({
+    const notification = await Notification.create({
       user: userId,
       type,
       title,
@@ -119,6 +126,10 @@ export const NotificationService = {
       link,
       isRead: false
     });
+
+    // Emit event for real-time SSE
+    const { getNotificationEmitter, NOTIFICATION_EVENT } = await import('@/lib/notification/events');
+    getNotificationEmitter().emit(NOTIFICATION_EVENT, { userId, notification });
   },
 
   /**
@@ -132,6 +143,7 @@ export const NotificationService = {
       booking_rejected: true,
       booking_cancelled: true,
       booking_expiring: true,
+      queue_cancelled: false, // In-app is enough for queue cancel
       system: false
     };
     return emailPolicy[type] || false;

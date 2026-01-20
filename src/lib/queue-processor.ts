@@ -13,9 +13,9 @@ export async function processLockAvailability(lockId: string) {
 
     if (nextQueueItem) {
       // --- Case A: Someone is in queue ---
-      // Reserve for next user for 2 hours
+      // Reserve for next user for 30 minutes
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 2); // 2 hours window
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30); // 30 minutes window
 
       const lock = await Lock.findByIdAndUpdate(
         lockId,
