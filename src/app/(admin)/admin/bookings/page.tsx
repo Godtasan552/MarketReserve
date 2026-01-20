@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Form, Spinner, Alert, Card, InputGroup, Row, Col } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Form, Spinner, Alert, Card, InputGroup, Row, Col, Modal } from 'react-bootstrap';
+import BookingDetail from '@/components/admin/BookingDetail';
 
 interface Booking {
   _id: string;
@@ -13,6 +14,13 @@ interface Booking {
   status: 'pending_payment' | 'pending_verification' | 'active' | 'expired' | 'cancelled';
   rentalType: string;
   createdAt: string;
+  payment?: {
+    slipImage: string;
+    status: 'pending' | 'approved' | 'rejected';
+    amount: number;
+    verifiedAt?: string;
+    rejectionReason?: string;
+  } | null;
 }
 
 export default function AdminBookingsPage() {
@@ -24,6 +32,11 @@ export default function AdminBookingsPage() {
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [rentalTypeFilter, setRentalTypeFilter] = useState('');
+  
+  // View Modal
+  const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -54,6 +67,10 @@ export default function AdminBookingsPage() {
       result = result.filter(b => b.status === statusFilter);
     }
 
+    if (rentalTypeFilter) {
+      result = result.filter(b => b.rentalType === rentalTypeFilter);
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(b => 
@@ -64,7 +81,7 @@ export default function AdminBookingsPage() {
     }
 
     setFilteredBookings(result);
-  }, [searchTerm, statusFilter, bookings]);
+  }, [searchTerm, statusFilter, rentalTypeFilter, bookings]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -101,7 +118,7 @@ export default function AdminBookingsPage() {
       <Card className="border shadow-sm mb-4 border-start-0 border-top-0 border-bottom-0 border-end-0" style={{ borderLeft: '4px solid var(--bs-primary)', boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.08)' }}>
         <Card.Body className="p-3 border rounded shadow-sm">
           <Row className="g-3">
-            <Col md={8}>
+            <Col md={6}>
               <InputGroup className="border rounded overflow-hidden">
                 <InputGroup.Text className="bg-light border-0 border-end">
                   <i className="bi bi-search text-muted"></i>
@@ -118,7 +135,7 @@ export default function AdminBookingsPage() {
                 />
               </InputGroup>
             </Col>
-            <Col md={4}>
+            <Col md={3}>
               <Form.Select 
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -130,6 +147,18 @@ export default function AdminBookingsPage() {
                 <option value="active">ใช้งานอยู่</option>
                 <option value="expired">หมดอายุ</option>
                 <option value="cancelled">ยกเลิก</option>
+              </Form.Select>
+            </Col>
+            <Col md={3}>
+              <Form.Select 
+                value={rentalTypeFilter} 
+                onChange={(e) => setRentalTypeFilter(e.target.value)}
+                className="bg-light border shadow-none"
+              >
+                <option value="">ทุกประเภท</option>
+                <option value="daily">รายวัน</option>
+                <option value="weekly">รายสัปดาห์</option>
+                <option value="monthly">รายเดือน</option>
               </Form.Select>
             </Col>
           </Row>
@@ -164,7 +193,15 @@ export default function AdminBookingsPage() {
             </thead>
             <tbody>
               {filteredBookings.map((b) => (
-                <tr key={b._id}>
+                <tr 
+                  key={b._id} 
+                  onClick={() => {
+                    setViewingBooking(b);
+                    setShowViewModal(true);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                  className="booking-row"
+                >
                   <td className="ps-4 fw-bold">#{b._id.slice(-6).toUpperCase()}</td>
                   <td>
                     <div className="fw-bold">{b.user?.name || 'ไม่ระบุชื่อ'}</div>
@@ -192,6 +229,27 @@ export default function AdminBookingsPage() {
           </Table>
         </div>
       )}
+
+      {/* Booking Detail Modal */}
+      <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold">รายละเอียดการจอง</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-0">
+          {viewingBooking && <BookingDetail booking={viewingBooking} />}
+        </Modal.Body>
+        <Modal.Footer className="border-0">
+          <Button variant="secondary" onClick={() => setShowViewModal(false)}>
+            ปิดหน้าต่าง
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <style jsx>{`
+        .booking-row:hover {
+          background-color: rgba(13, 110, 253, 0.05) !important;
+        }
+      `}</style>
     </Container>
   );
 }

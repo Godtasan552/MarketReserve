@@ -22,11 +22,21 @@ export default function LockManagementPage() {
   const [editingLock, setEditingLock] = useState<Lock | null>(null);
   const [viewingLock, setViewingLock] = useState<LockListType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Filters
+  const [zoneFilter, setZoneFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [zones, setZones] = useState<{ _id: string; name: string }[]>([]);
 
   const fetchLocks = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (zoneFilter) params.append('zone', zoneFilter);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(`/api/admin/locks${qs}`);
       if (res.ok) {
         const data = await res.json();
@@ -37,11 +47,31 @@ export default function LockManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, zoneFilter, statusFilter]);
 
   useEffect(() => {
     fetchLocks();
   }, [fetchLocks]);
+
+  useEffect(() => {
+    // Fetch zones for filter
+    const fetchZones = async () => {
+      try {
+        const res = await fetch('/api/zones');
+        console.log('Zones API response status:', res.status);
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Zones data received:', data);
+          setZones(data);
+        } else {
+          console.error('Failed to fetch zones, status:', res.status);
+        }
+      } catch (error) {
+        console.error('Failed to fetch zones', error);
+      }
+    };
+    fetchZones();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
       e.preventDefault();
@@ -122,8 +152,8 @@ export default function LockManagementPage() {
 
       <Card className="border shadow-sm mb-4 border-start-0 border-top-0 border-bottom-0 border-end-0" style={{ borderLeft: '4px solid var(--bs-primary)', boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.08)' }}>
         <Card.Body className="p-3 border rounded shadow-sm">
-          <Row className="align-items-center">
-            <Col md={4}>
+          <Row className="g-3">
+            <Col md={5}>
                 <Form onSubmit={handleSearch}>
                     <InputGroup size="sm" className="border rounded overflow-hidden">
                         <InputGroup.Text className="bg-light border-0 border-end"><i className="bi bi-search text-muted"></i></InputGroup.Text>
@@ -141,6 +171,47 @@ export default function LockManagementPage() {
                         </Button>
                     </InputGroup>
                 </Form>
+            </Col>
+            <Col md={3}>
+              <Form.Select 
+                size="sm"
+                value={zoneFilter} 
+                onChange={(e) => setZoneFilter(e.target.value)}
+                className="bg-light border shadow-none"
+              >
+                <option value="">ทุกโซน</option>
+                {zones.map(zone => (
+                  <option key={zone._id} value={zone._id}>{zone.name}</option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Form.Select 
+                size="sm"
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-light border shadow-none"
+              >
+                <option value="">ทุกสถานะ</option>
+                <option value="available">ว่าง</option>
+                <option value="rented">ให้เช่าแล้ว</option>
+                <option value="maintenance">ปิดปรับปรุง</option>
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Button 
+                variant="outline-secondary" 
+                size="sm"
+                className="w-100"
+                onClick={() => {
+                  setSearchTerm('');
+                  setZoneFilter('');
+                  setStatusFilter('');
+                }}
+              >
+                <i className="bi bi-x-circle me-1"></i>
+                ล้างตัวกรอง
+              </Button>
             </Col>
           </Row>
         </Card.Body>
