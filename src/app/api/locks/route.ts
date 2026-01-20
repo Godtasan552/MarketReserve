@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
 import Lock from '@/models/Lock';
-import Zone from '@/models/Zone';
 interface LockQuery {
   isActive?: boolean;
   zone?: string;
@@ -34,6 +33,32 @@ export async function GET(req: NextRequest) {
     const locks = await Lock.find(query)
       .populate('zone', 'name description')
       .sort({ lockNumber: 1 });
+
+    // Handle date-based availability
+    const requestedDate = searchParams.get('date');
+    if (requestedDate) {
+      const targetDate = new Date(requestedDate);
+      targetDate.setHours(0,0,0,0);
+      const targetEnd = new Date(targetDate);
+      targetEnd.setHours(23, 59, 59, 999);
+
+      const Booking = (await import('@/models/Booking')).default;
+      const overlappingBookings = await Booking.find({
+        status: { $in: ['pending_payment', 'pending_verification', 'active'] },
+        startDate: { $lte: targetEnd },
+        endDate: { $gte: targetDate }
+      }).select('lock');
+
+      const bookedLockIds = new Set(overlappingBookings.map(b => b.lock.toString()));
+
+      return NextResponse.json(locks.map(lock => {
+        const lockObj = lock.toObject();
+        if (bookedLockIds.has(lock._id.toString()) && lockObj.status === 'available') {
+          lockObj.status = 'booked';
+        }
+        return lockObj;
+      }));
+    }
 
     return NextResponse.json(locks);
   } catch (error) {

@@ -10,6 +10,8 @@ interface IUser {
   isActive: boolean;
   isBlacklisted: boolean;
   emailVerified: boolean;
+  queueDropCount: number;
+  lastQueueDropAt?: Date;
   preferences: {
     notifications: {
       email: boolean;
@@ -50,6 +52,8 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
   isActive: { type: Boolean, default: true },
   isBlacklisted: { type: Boolean, default: false },
   emailVerified: { type: Boolean, default: false },
+  queueDropCount: { type: Number, default: 0 },
+  lastQueueDropAt: { type: Date },
   preferences: {
     notifications: {
       email: { type: Boolean, default: true },

@@ -31,6 +31,7 @@ export default function LockBrowsingPage() {
   const [selectedZone, setSelectedZone] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
 
   // Bookmarks
   const [bookmarkedLockIds, setBookmarkedLockIds] = useState<string[]>([]);
@@ -71,7 +72,7 @@ export default function LockBrowsingPage() {
       
       if (!res.ok) {
         // Revert if failed
-         setBookmarkedLockIds(bookmarkedLockIds);
+        setBookmarkedLockIds(bookmarkedLockIds);
         return;
       }
 
@@ -92,7 +93,7 @@ export default function LockBrowsingPage() {
 
   const fetchZones = async () => {
     try {
-      const res = await fetch('/api/admin/zones'); // Reusing admin API for zones as it's just a list
+      const res = await fetch('/api/admin/zones');
       if (res.ok) {
         const data = await res.json();
         setZones(data);
@@ -110,6 +111,7 @@ export default function LockBrowsingPage() {
       if (priceRange.min) params.append('minPrice', priceRange.min);
       if (priceRange.max) params.append('maxPrice', priceRange.max);
       if (statusFilter) params.append('status', statusFilter);
+      if (selectedDate) params.append('date', selectedDate);
       
       const res = await fetch(`/api/locks?${params.toString()}`);
       if (res.ok) {
@@ -121,7 +123,7 @@ export default function LockBrowsingPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedZone, priceRange, statusFilter]);
+  }, [selectedZone, priceRange, statusFilter, selectedDate]);
 
   useEffect(() => {
     fetchZones();
@@ -143,6 +145,7 @@ export default function LockBrowsingPage() {
     setSelectedZone('');
     setPriceRange({ min: '', max: '' });
     setStatusFilter('');
+    setSelectedDate('');
     setShowFavoritesOnly(false);
   };
   
@@ -162,7 +165,7 @@ export default function LockBrowsingPage() {
         <Card.Body className="p-3 border rounded shadow-sm">
           <Row className="g-2 align-items-center">
             {/* Zone Filter */}
-            <Col xs={12} md={3} lg={2}>
+            <Col xs={12} md={4} lg={2}>
               <InputGroup size="sm" className="border rounded overflow-hidden shadow-none">
                 <InputGroup.Text className="bg-light border-0 border-end"><i className="bi bi-geo-alt text-muted"></i></InputGroup.Text>
                 <Form.Select 
@@ -176,21 +179,17 @@ export default function LockBrowsingPage() {
               </InputGroup>
             </Col>
 
-            {/* Status Filter */}
-            <Col xs={12} md={3} lg={2}>
+            {/* Date Filter */}
+            <Col xs={12} md={4} lg={2}>
               <InputGroup size="sm" className="border rounded overflow-hidden shadow-none">
-                <InputGroup.Text className="bg-light border-0 border-end"><i className="bi bi-info-circle text-muted"></i></InputGroup.Text>
-                <Form.Select 
-                  value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                <InputGroup.Text className="bg-light border-0 border-end"><i className="bi bi-calendar-event text-muted"></i></InputGroup.Text>
+                <Form.Control 
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
                   className="bg-light border-0 shadow-none fw-medium"
-                >
-                  <option value="">ทุกสถานะ</option>
-                  <option value="available">ว่าง</option>
-                  <option value="booked">จองแล้ว</option>
-                  <option value="rented">เช่าแล้ว</option>
-                  <option value="maintenance">ปรับปรุง</option>
-                </Form.Select>
+                />
               </InputGroup>
             </Col>
 
@@ -225,7 +224,7 @@ export default function LockBrowsingPage() {
             </Col>
 
             {/* Favorites Toggle */}
-            <Col xs={6} md={2} lg={2}>
+            <Col xs={6} md={6} lg={2}>
               <Button 
                 variant={showFavoritesOnly ? "danger" : "outline-secondary"}
                 size="sm"
@@ -238,7 +237,7 @@ export default function LockBrowsingPage() {
             </Col>
 
             {/* Action Buttons */}
-            <Col xs={6} md={12} lg={3} className="d-flex gap-2 justify-content-end">
+            <Col xs={6} md={6} lg={3} className="d-flex gap-2 justify-content-end">
               <Button variant="primary" size="sm" className="flex-grow-1 flex-lg-grow-0 fw-medium px-3" onClick={fetchLocks}>
                 <i className="bi bi-search me-1"></i> ค้นหา
               </Button>
@@ -343,9 +342,9 @@ export default function LockBrowsingPage() {
                             href={`/locks/${lock._id}`}
                             variant={lock.status === 'available' ? 'primary' : 'outline-secondary'}
                             className="fw-bold py-1 py-md-2 rounded-3 small"
-                            disabled={lock.status !== 'available'}
+                            disabled={lock.status !== 'available' && !selectedDate} // Simple rule: if we picked a date, button works
                           >
-                            {lock.status === 'available' ? 'จองทันที' : 'จองแล้ว'}
+                            {lock.status === 'available' ? 'จองทันที' : 'จองสมาชิก'}
                           </Button>
                       </div>
                     </Card.Body>
@@ -376,19 +375,6 @@ export default function LockBrowsingPage() {
         .backdrop-blur {
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-        }
-      `}</style>
-      
-      <style jsx global>{`
-        .hover-lift:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 1rem 3rem rgba(0,0,0,0.1) !important;
-        }
-        .transition-300 {
-          transition: all 0.3s ease;
-        }
-        .backdrop-blur {
-          backdrop-filter: blur(5px);
         }
       `}</style>
     </Container>

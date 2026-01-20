@@ -329,15 +329,14 @@ export default function LockDetailClient() {
                   </Alert>
               )}
 
-              {lock.status === 'available' || (lock.status === 'reserved' && lock.reservedTo === session?.user?.id) ? (
-                <Form onSubmit={handleBooking}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="fw-bold">เลือกรูปแบบการเช่า</Form.Label>
+              <Form onSubmit={handleBooking}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">เลือกรูปแบบการเช่า</Form.Label>
                   <div className="d-grid gap-2">
                     <Button 
                       variant={rentalType === 'daily' ? 'primary' : 'outline-primary'} 
                       onClick={() => setRentalType('daily')}
-                      className="text-start px-3 py-2"
+                      className="text-start px-3 py-2 rounded-3"
                     >
                       <i className={`bi bi-check-circle${rentalType === 'daily' ? '-fill' : ''} me-2`}></i>
                       รายวัน <span className="float-end fw-bold">฿{lock.pricing.daily}</span>
@@ -346,7 +345,7 @@ export default function LockDetailClient() {
                       <Button 
                         variant={rentalType === 'weekly' ? 'primary' : 'outline-primary'} 
                         onClick={() => setRentalType('weekly')}
-                        className="text-start px-3 py-2"
+                        className="text-start px-3 py-2 rounded-3"
                       >
                          <i className={`bi bi-check-circle${rentalType === 'weekly' ? '-fill' : ''} me-2`}></i>
                          รายสัปดาห์ <span className="float-end fw-bold">฿{lock.pricing.weekly}</span>
@@ -356,7 +355,7 @@ export default function LockDetailClient() {
                       <Button 
                         variant={rentalType === 'monthly' ? 'primary' : 'outline-primary'} 
                         onClick={() => setRentalType('monthly')}
-                        className="text-start px-3 py-2"
+                        className="text-start px-3 py-2 rounded-3"
                       >
                          <i className={`bi bi-check-circle${rentalType === 'monthly' ? '-fill' : ''} me-2`}></i>
                          รายเดือน <span className="float-end fw-bold">฿{lock.pricing.monthly}</span>
@@ -372,11 +371,11 @@ export default function LockDetailClient() {
                     min={new Date().toISOString().split('T')[0]}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="py-2"
+                    className="py-2 border-primary-subtle rounded-3"
                     required
                   />
                   <Form.Text className="text-muted">
-                    *กรุณาเลือกวันที่ตลาดเปิดทำการ
+                    <i className="bi bi-calendar-event me-1"></i> สามารถจองล่วงหน้าได้หากช่วงเวลานั้นยังว่าง
                   </Form.Text>
                 </Form.Group>
 
@@ -385,7 +384,7 @@ export default function LockDetailClient() {
                     variant="primary" 
                     size="lg" 
                     type="submit" 
-                    className="fw-bold py-3"
+                    className="fw-bold py-3 rounded-4 shadow-sm"
                     disabled={bookingLoading}
                   >
                     {bookingLoading ? (
@@ -395,63 +394,60 @@ export default function LockDetailClient() {
                     )}
                   </Button>
                 </div>
-                <p className="text-center small text-muted">
-                  <i className="bi bi-info-circle me-1"></i> เมื่อจองแล้ว คุณจะมีเวลา 30 นาทีในการชำระเงิน
-                </p>
               </Form>
-              ) : (
-                <div>
-                   <Alert variant="warning" className="border-0 bg-warning bg-opacity-10 text-dark mb-4">
-                      <div className="d-flex">
-                        <i className="bi bi-exclamation-triangle-fill me-3 fs-4 text-warning"></i>
-                        <div>
-                          <strong>ล็อกนี้ไม่ว่างในขณะนี้</strong>
-                          <p className="mb-0 small">คุณสามารถเข้าคิวรอเพื่อรับสิทธิ์จองเมื่อล็อกว่างลง</p>
-                        </div>
-                      </div>
-                   </Alert>
-                   
-                   <div className="bg-light rounded-3 p-3 mb-4 text-center border">
-                      <div className="text-muted small mb-1">จำนวนคนรอคิวขณะนี้</div>
-                      <div className="display-4 fw-bold text-dark">{queueInfo.count} <span className="fs-6 text-muted fw-normal">คน</span></div>
-                   </div>
 
-                   {queueInfo.inQueue ? (
-                      <div className="text-center">
-                        <div className="mb-3">
-                           <Badge bg="primary" className="p-3 rounded-pill mb-2">
-                              <i className="bi bi-person-fill me-2"></i>
-                              คุณคือคิวลำดับที่ {queueInfo.userPosition}
-                           </Badge>
-                           <div className="small text-muted">เมื่อถึงคิวของคุณ ระบบจะแจ้งเตือนทันที</div>
-                        </div>
-                        <Button 
-                          variant="outline-danger" 
-                          className="w-100" 
-                          onClick={handleToggleQueue}
-                          disabled={queueLoading}
-                        >
-                          {queueLoading ? <Spinner size="sm" animation="border" /> : 'ออกจากคิว'}
-                        </Button>
+              <hr className="my-4 opacity-10" />
+
+              {/* Queue Section - Show only if currently occupied */}
+              {lock.status !== 'available' && !(lock.status === 'reserved' && lock.reservedTo === session?.user?.id) && (
+                <div className="mt-4">
+                  <h5 className="fw-bold mb-3 d-flex align-items-center">
+                    <i className="bi bi-people me-2 text-warning"></i>
+                    จองคิวลำดับถัดไป
+                  </h5>
+                  <Alert variant="warning" className="border-0 bg-warning bg-opacity-10 text-dark mb-4 rounded-4">
+                    <div className="small">
+                      ขณะนี้ล็อกไม่ว่างในเวลาปัจจุบัน คุณสามารถเข้าคิวเพื่อรับสิทธิ์เมื่อมีการยกเลิกหรือหมดสัญญา
+                    </div>
+                  </Alert>
+                  
+                  <div className="bg-light rounded-4 p-3 mb-4 text-center border">
+                    <div className="text-muted small mb-1">จำนวนคนรอคิวขณะนี้</div>
+                    <div className="h2 fw-bold text-dark mb-0">{queueInfo.count} <span className="fs-6 text-muted fw-normal">คน</span></div>
+                  </div>
+
+                  {queueInfo.inQueue ? (
+                    <div className="text-center">
+                      <div className="mb-3">
+                         <Badge bg="primary" className="p-3 rounded-pill mb-2">
+                            คุณคือคิวลำดับที่ {queueInfo.userPosition}
+                         </Badge>
                       </div>
-                   ) : queueInfo.hasActiveBooking ? (
-                      <div className="text-center">
-                         <Alert variant="success" className="border-0 bg-success bg-opacity-10 text-success mb-0 py-3">
-                            <i className="bi bi-check-circle-fill me-2"></i>
-                            คุณมีรายการจอง/เช่าล็อกนี้อยู่แล้ว
-                         </Alert>
-                      </div>
-                   ) : (
                       <Button 
-                        variant="primary" 
-                        size="lg" 
-                        className="w-100 fw-bold" 
+                        variant="outline-danger" 
+                        className="w-100 rounded-pill" 
                         onClick={handleToggleQueue}
                         disabled={queueLoading}
                       >
-                        {queueLoading ? <Spinner size="sm" animation="border" /> : 'เข้าคิวรอจอง'}
+                        {queueLoading ? <Spinner size="sm" animation="border" /> : 'ออกจากคิว'}
                       </Button>
-                   )}
+                    </div>
+                  ) : queueInfo.hasActiveBooking ? (
+                    <div className="text-center">
+                       <Alert variant="success" className="border-0 bg-success bg-opacity-10 text-success mb-0 py-3 rounded-4">
+                          คุณมีรายการจอง/เช่าล็อกนี้อยู่แล้ว
+                       </Alert>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="outline-primary" 
+                      className="w-100 fw-bold rounded-pill" 
+                      onClick={handleToggleQueue}
+                      disabled={queueLoading}
+                    >
+                      {queueLoading ? <Spinner size="sm" animation="border" /> : 'เข้าคิวรอจอง'}
+                    </Button>
+                  )}
                 </div>
               )}
             </Card.Body>

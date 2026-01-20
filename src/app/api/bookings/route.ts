@@ -29,13 +29,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ไม่พบข้อมูลล็อก' }, { status: 404 });
     }
 
-    // Check standard availability
-    if (lock.status === 'booked' || lock.status === 'rented' || lock.status === 'maintenance') {
-      return NextResponse.json({ error: 'ล็อกนี้ไม่ว่างสำหรับการจอง' }, { status: 400 });
+    // Check Lock Status for current date if trying to book for today
+    const requestedStart = new Date(startDate);
+    requestedStart.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isToday = requestedStart.getTime() === today.getTime();
+
+    // Maintenance check (always blocked)
+    if (lock.status === 'maintenance') {
+      return NextResponse.json({ error: 'ล็อกนี้อยู่ในช่วงปรับปรุง ไม่สามารถจองได้' }, { status: 400 });
     }
 
-    // Check Reservation Logic
-    if (lock.status === 'reserved') {
+    // Check standard availability for TODAY if booking for today
+    if (isToday && (lock.status === 'booked' || lock.status === 'rented')) {
+      return NextResponse.json({ error: 'ล็อกนี้ถูกเช่าหรือจองแล้วในวันนี้' }, { status: 400 });
+    }
+
+    // For advance booking or today, check all overlapping bookings
+    const { startDate: start, endDate: end, totalAmount: amount } = calculateBookingDetails(
+      lock.pricing,
+      requestedStart,
+      rentalType as RentalType
+    );
+
+    const overlap = await Booking.findOne({
+      lock: lockId,
+      status: { $in: ['pending_payment', 'pending_verification', 'active'] },
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } }
+      ]
+    });
+
+    if (overlap) {
+      return NextResponse.json({ 
+        error: 'ล็อกนี้ไม่ว่างในช่วงเวลาที่เลือก เนื่องจากมีการจองทับซ้อนกัน' 
+      }, { status: 400 });
+    }
+
+    // Check Reservation Logic (Only for today's FCFS/Queue)
+    if (isToday && lock.status === 'reserved') {
       // 1. Check if user is the reserved one
       if (lock.reservedTo?.toString() !== session.user.id) {
          return NextResponse.json({ error: 'ล็อกนี้ติดสิทธิ์จองคิวลำดับถัดไป (Reserved Queue)' }, { status: 403 });
@@ -43,17 +77,9 @@ export async function POST(req: NextRequest) {
       
       // 2. Check Expiry
       if (lock.reservationExpiresAt && new Date() > new Date(lock.reservationExpiresAt)) {
-         // Edge case: Cron hasn't run yet but time is up. Strict check.
          return NextResponse.json({ error: 'สิทธิ์การจองของคุณหมดอายุแล้ว' }, { status: 403 });
       }
     }
-
-    // Calculate dates and amount using utility
-    const { startDate: start, endDate: end, totalAmount: amount } = calculateBookingDetails(
-      lock.pricing,
-      new Date(startDate),
-      rentalType as RentalType
-    );
 
     // Payment deadline: 30 minutes from now (Updated for faster queue movement)
     const paymentDeadline = new Date();

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Container, Card, ListGroup, Button, Badge, Spinner } from 'react-bootstrap';
+import { useState, useEffect, useMemo } from 'react';
+import { Container, Card, ListGroup, Button, Badge, Spinner, Nav } from 'react-bootstrap';
 import Link from 'next/link';
 
 interface NotificationItem {
@@ -17,6 +17,7 @@ interface NotificationItem {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const fetchNotifications = async () => {
     try {
@@ -36,6 +37,13 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  const filteredNotifications = useMemo(() => {
+    if (filter === 'unread') {
+      return notifications.filter(n => !n.isRead);
+    }
+    return notifications;
+  }, [notifications, filter]);
 
   const markAsRead = async (id: string, currentlyRead: boolean) => {
     if (!currentlyRead) {
@@ -81,46 +89,81 @@ export default function NotificationsPage() {
 
   return (
     <Container className="py-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h2 className="fw-bold mb-1">การแจ้งเตือนทั้งหมด</h2>
+            <h2 className="fw-bold mb-1">การแจ้งเตือน</h2>
             <p className="text-muted mb-0">ติดตามข่าวสารและการจองพื้นที่ของคุณ</p>
         </div>
-        {notifications.some(n => !n.isRead) && (
-            <Button variant="outline-primary" size="sm" onClick={markAllAsRead}>
-                <i className="bi bi-check2-all me-2"></i>อ่านทั้งหมด
-            </Button>
-        )}
+        <div className="d-flex align-items-center gap-3">
+          {notifications.some(n => !n.isRead) && (
+              <Button variant="outline-primary" size="sm" onClick={markAllAsRead}>
+                  <i className="bi bi-check2-all me-2"></i>อ่านทั้งหมด
+              </Button>
+          )}
+        </div>
       </div>
 
-      <Card className="border-0 shadow-sm overflow-hidden">
+      <Nav variant="pills" className="mb-4 bg-light p-1 rounded-3 d-inline-flex">
+        <Nav.Item>
+          <Nav.Link 
+            active={filter === 'all'} 
+            onClick={() => setFilter('all')}
+            className={`rounded-3 px-4 py-2 border-0 ${filter === 'all' ? 'shadow-sm' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            ทั้งหมด
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link 
+            active={filter === 'unread'} 
+            onClick={() => setFilter('unread')}
+            className={`rounded-3 px-4 py-2 border-0 ${filter === 'unread' ? 'shadow-sm' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            ยังไม่ได้อ่าน
+            {notifications.filter(n => !n.isRead).length > 0 && (
+              <Badge pill bg="danger" className="ms-2">
+                {notifications.filter(n => !n.isRead).length}
+              </Badge>
+            )}
+          </Nav.Link>
+        </Nav.Item>
+      </Nav>
+
+      <Card className="border-0 shadow-sm overflow-hidden rounded-4">
         {loading ? (
             <div className="text-center py-5">
                 <Spinner animation="border" variant="primary" />
                 <p className="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
             </div>
-        ) : notifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-5">
-                <i className="bi bi-bell-slash display-1 text-light mb-3 d-block"></i>
-                <h4 className="text-muted">ไม่มีการแจ้งเตือนในขณะนี้</h4>
-                <Link href="/locks">
-                    <Button variant="primary" className="mt-3">ไปจองพื้นที่เลย</Button>
-                </Link>
+                <i className={`bi ${filter === 'unread' ? 'bi-chat-heart' : 'bi-bell-slash'} display-1 text-light mb-3 d-block`}></i>
+                <h4 className="text-muted">
+                  {filter === 'unread' ? 'ไม่มีรายการใหม่ที่ยังไม่ได้อ่าน' : 'ไม่มีการแจ้งเตือนในขณะนี้'}
+                </h4>
+                {filter === 'all' && (
+                  <Link href="/locks">
+                      <Button variant="primary" className="mt-3">ไปจองพื้นที่เลย</Button>
+                  </Link>
+                )}
             </div>
         ) : (
             <ListGroup variant="flush">
-                {notifications.map((n) => (
+                {filteredNotifications.map((n) => (
                     <ListGroup.Item 
                         key={n._id}
-                        className={`p-4 border-bottom ${!n.isRead ? 'bg-light bg-opacity-50' : ''}`}
+                        className={`p-4 border-bottom ${!n.isRead ? 'bg-primary bg-opacity-10' : ''} border-0 list-group-item-action transition-all`}
                         onClick={() => markAsRead(n._id, n.isRead)}
+                        style={{ cursor: n.isRead ? 'default' : 'pointer' }}
                     >
                         <div className="d-flex gap-3">
-                            <div className={`bg-${getTypeColor(n.type)} bg-opacity-10 p-3 rounded-circle text-${getTypeColor(n.type)} d-flex align-items-center justify-content-center`} style={{ width: '60px', height: '60px' }}>
+                            <div className={`bg-${getTypeColor(n.type)} bg-opacity-10 p-3 rounded-circle text-${getTypeColor(n.type)} d-flex align-items-center justify-content-center flex-shrink-0`} style={{ width: '60px', height: '60px' }}>
                                 <i className={`bi ${getTypeIcon(n.type)} fs-3`}></i>
                             </div>
                             <div className="flex-grow-1">
-                                <div className="d-flex justify-content-between align-items-start mb-1">
+                                <div className="d-flex justify-content-between align-items-start mb-1 gap-2 flex-wrap">
                                     <h5 className={`mb-0 fw-bold ${!n.isRead ? 'text-primary' : ''}`}>{n.title}</h5>
                                     <small className="text-muted">{new Date(n.createdAt).toLocaleString('th-TH')}</small>
                                 </div>
@@ -129,13 +172,13 @@ export default function NotificationsPage() {
                                     {n.link && (
                                         <Link 
                                           href={n.link.replace('/bookings/', '/my-bookings/')} 
-                                          className="btn btn-sm btn-outline-primary fw-bold px-3"
+                                          className="btn btn-sm btn-outline-primary fw-bold px-3 rounded-pill"
                                         >
                                             ดูรายละเอียด
                                         </Link>
                                     )}
                                     {!n.isRead && (
-                                        <Badge bg="primary" pill>ใหม่</Badge>
+                                        <Badge bg="primary" pill className="px-3">ใหม่</Badge>
                                     )}
                                 </div>
                             </div>
