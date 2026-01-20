@@ -92,19 +92,25 @@ export async function POST(req: NextRequest) {
       );
 
       await dbSession.commitTransaction();
-      dbSession.endSession();
 
-      // Send Notification (Event-based) - Policy will check if it should be sent
-      await NotificationService.send(session.user.id, 'payment_uploaded', {
-        bookingId: bookingId,
-        userEmail: session.user.email || undefined
-      });
+      // Send Notification (Outside Transaction)
+      try {
+        await NotificationService.send(session.user.id, 'payment_uploaded', {
+          bookingId: bookingId,
+          userEmail: session.user.email || undefined
+        });
+      } catch (notifyErr) {
+        console.error('Notification failed but payment was successful:', notifyErr);
+      }
 
       return NextResponse.json(payment[0], { status: 201 });
     } catch (err: unknown) {
-      await dbSession.abortTransaction();
-      dbSession.endSession();
+      if (dbSession.inTransaction()) {
+        await dbSession.abortTransaction();
+      }
       throw err;
+    } finally {
+      dbSession.endSession();
     }
 
   } catch (error: unknown) {

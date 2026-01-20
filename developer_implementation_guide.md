@@ -848,16 +848,27 @@ npm install sass
 **สาเหตุ**: เวอร์ชันของ Sass ล่าสุด (1.80+) มีการเปลี่ยนแปลงการใช้งานฟังก์ชัน `if()`
 **วิธีแก้ไข**: ระบบได้ทำการปิดคำเตือนเหล่านี้ไว้ให้แล้วในไฟล์ `next.config.ts` ในส่วนของ `silenceDeprecations` หากยังพบคำเตือนอื่นๆ สามารถเพิ่มชื่อหัวข้อคำเตือนลงในลิสต์นั้นได้
 
-### 3. คำเตือน Next.js 16 Middleware Deprecation (`middleware` -> `proxy`)
-**อาการ**: เจอคำเตือน `The "middleware" file convention is deprecated. Please use "proxy" instead.`
-**สาเหตุ**: Next.js 16 (Turbopack) มีการเปลี่ยนชื่อไฟล์มาตรฐานจาก `middleware.ts` เป็น `proxy.ts`
-**วิธีแก้ไข**: ระบบได้ทำการเปลี่ยนชื่อไฟล์จาก `src/middleware.ts` เป็น `src/proxy.ts` ให้เรียบร้อยแล้ว หากคุณเผลอสร้างไฟล์ `middleware.ts` กลับมาใหม่ ให้ทำการเปลี่ยนชื่อเป็น `proxy.ts` แทน
+### 3. ปัญหา "Failed to fetch" หรือ Middleware error
+**อาการ**: เจอ Error `TypeError: Failed to fetch` เมื่อรันบน Next.js 16 (Turbopack)
+**สาเหตุ**: 
+  1. การเปลี่ยนชื่อไฟล์ `middleware.ts` เป็น `proxy.ts` อาจทำให้ Next Auth หรือระบบ Routing ของ Next.js หาไฟล์ไม่เจอในบางเวอร์ชัน 
+  2. การจัดการ Transaction ใน API ที่ไม่สมบูรณ์ทำให้ Server คืนค่า Error 500 หรือปิด Connection กระทันหัน
+**วิธีแก้ไข**: 
+  - ระบบได้เปลี่ยนชื่อกลับมาเป็น `src/middleware.ts` เพื่อความเสถียรสูงสุด
+  - ตรวจสอบว่าได้ตั้งค่า `NEXTAUTH_URL` ใน `.env` ให้ตรงกับ URL ที่ใช้งานจริง (เช่น `http://localhost:3000`)
 
-### 4. ปัญหาการเชื่อมต่อฐานข้อมูล (MongoDB Connection Error)
+### 4. OCR ประมวลผลนาน (OCR reads file very long)
+**อาการ**: ขั้นตอนการอ่านข้อมูลจากสลิปใช้เวลานานเกินไป (มากกว่า 10-20 วินาที)
+**สาเหตุ**: Tesseract.js ต้องโหลดไฟล์ Language Data (.traineddata) ขนาดใหญ่จาก CDN ทุกครั้งที่มีการเริ่มต้น Worker ใหม่
+**วิธีแก้ไข**: 
+  - ระบบในหน้ารายละเอียดการจองได้ปรับมาใช้ `createWorker` และจัดการ Lifecycle ให้ดีขึ้น
+  - **ข้อแนะนำ**: หากต้องการความเร็วสูงสุด แนะนำให้โหลดไฟล์ `tha.traineddata` มาไว้ใน `public/tesseract/` และตั้งค่า `langPath` ใน worker ให้ชี้ไปที่โฟลเดอร์ในเครื่อง (Local) เพื่อลดการดาวน์โหลดจากอินเทอร์เน็ต
+
+### 5. ปัญหาการเชื่อมต่อฐานข้อมูล (MongoDB Connection Error)
 **อาการ**: ระบบแจ้งว่าไม่สามารถเชื่อมต่อฐานข้อมูลได้
 **วิธีแก้ไข**: ตรวจสอบว่าได้ตั้งค่า `MONGODB_URI` ใน `.env` ถูกต้อง และได้เพิ่ม IP Address ของคุณใน whitelist บน MongoDB Atlas แล้ว
 
-### 3. ปัญหา Authentication (Auth Errors)
+### 6. ปัญหา Authentication (Auth Errors)
 **อาการ**: ไม่สามารถ Login ได้ หรือเจอ "Invalid credentials"
 **วิธีแก้ไข**: ตรวจสอบว่ารัน `npm run seed-admin` เพื่อสร้าง User คนแรกลงในฐานข้อมูลหรือยัง และตรวจสอบ `NEXTAUTH_SECRET` ใน `.env`
 

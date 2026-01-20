@@ -89,26 +89,31 @@ export async function PUT(
       }
 
       await dbSession.commitTransaction();
-      dbSession.endSession();
 
-      // Send Notification (Event-based)
+      // Send Notification (Outside Transaction)
       if (emailData) {
-        // We use emailData constructed above.
-        await NotificationService.send(emailData.userId, 'booking_approved', {
-            bookingId: emailData.bookingId,
-            lockNumber: emailData.lockNumber,
-            startDate: emailData.startDate,
-            endDate: emailData.endDate,
-            userName: emailData.userName,
-            userEmail: emailData.userEmail
-        });
+        try {
+          await NotificationService.send(emailData.userId, 'booking_approved', {
+              bookingId: emailData.bookingId,
+              lockNumber: emailData.lockNumber,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              userName: emailData.userName,
+              userEmail: emailData.userEmail
+          });
+        } catch (notifyErr) {
+          console.error('Notification failed but payment update was successful:', notifyErr);
+        }
       }
 
       return NextResponse.json({ message: 'ดำเนินการเรียบร้อยแล้ว' });
     } catch (err: unknown) {
-      await dbSession.abortTransaction();
-      dbSession.endSession();
+      if (dbSession.inTransaction()) {
+        await dbSession.abortTransaction();
+      }
       throw err;
+    } finally {
+      dbSession.endSession();
     }
 
   } catch (error: unknown) {

@@ -102,17 +102,21 @@ export default function BookingDetailPage() {
 
   const runOCR = async (imageSrc: string) => {
     setOcrLoading(true);
+    setUploadProgress(0);
+    
+    let worker;
     try {
-        const result = await Tesseract.recognize(imageSrc, 'tha+eng', {
+        worker = await Tesseract.createWorker('tha+eng', 1, {
             logger: (m) => {
                 if (m.status === 'recognizing text') {
                     setUploadProgress(Math.floor(m.progress * 100));
                 }
-            }
+            },
+            // Use a stable CDN for languages to avoid fetch issues
+            cacheMethod: 'readOnly',
         });
         
-        const text = result.data.text;
-        const confidence = result.data.confidence;
+        const { data: { text, confidence } } = await worker.recognize(imageSrc);
         
         // --- Shared Regex Logic (Client Side) ---
         const cleanText = text
@@ -128,7 +132,7 @@ export default function BookingDetailPage() {
         let detectedAmount: number | undefined;
         const allMatches: number[] = [];
 
-        // 1. Try specific patterns (matchAll needs g flag)
+        // 1. Try specific patterns
         for (const pattern of amountPatterns) {
             const regex = new RegExp(pattern instanceof RegExp ? pattern.source : pattern, 'gi');
             const matches = cleanText.matchAll(regex);
@@ -138,7 +142,7 @@ export default function BookingDetailPage() {
             }
         }
 
-        // 2. Fallback to any currency-like number (very broad)
+        // 2. Fallback to any currency-like number
         const genericRegex = /(\d{1,3}(?:[,\s]?\d{3})*[.,]\s?\d{2})/g;
         const genericMatches = cleanText.matchAll(genericRegex);
         for (const m of genericMatches) {
@@ -148,13 +152,10 @@ export default function BookingDetailPage() {
 
         // 3. Selection Logic
         if (allMatches.length > 0) {
-            // Priority 1: If any number matches the target amount exactly, pick it
             const exactMatch = allMatches.find(a => booking && Math.abs(a - booking.totalAmount) < 0.01);
-            
             if (exactMatch !== undefined) {
                 detectedAmount = exactMatch;
             } else {
-                // Priority 2: Pick the largest non-zero number (excluding obvious fees like 0.00)
                 const validAmounts = allMatches.filter(a => a > 0.01);
                 if (validAmounts.length > 0) {
                     detectedAmount = Math.max(...validAmounts);
@@ -182,12 +183,19 @@ export default function BookingDetailPage() {
             amount: detectedAmount,
             referenceNumber: detectedRef,
             confidence: confidence,
-            rawText: cleanText // Keep raw text for debug
+            rawText: cleanText
         });
 
     } catch (err) {
         console.error('OCR Client Error:', err);
+        // Special handling for Failed to fetch which often happens in Tesseract
+        if (err instanceof Error && err.message.includes('fetch')) {
+            console.warn('Tesseract failed to fetch language data. Check your connection.');
+        }
     } finally {
+        if (worker) {
+            await worker.terminate();
+        }
         setOcrLoading(false);
         setUploadProgress(0);
     }
