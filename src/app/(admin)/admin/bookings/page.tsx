@@ -208,9 +208,15 @@ export default function AdminBookingsPage() {
                     <div className="small text-muted">{b.user?.email}</div>
                   </td>
                   <td>
-                    <Badge bg="primary">ล็อก {b.lock?.lockNumber}</Badge>
-                    <div className="small mt-1 text-muted text-truncate" style={{ maxWidth: '150px' }}>
-                      {b.lock?.zone?.name || 'ไม่ระบุโซน'}
+                    <div className="d-flex flex-column align-items-start gap-1">
+                      <Badge bg="primary" className="rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center shadow-sm">
+                        <i className="bi bi-shop me-2"></i>
+                        ล็อก {b.lock?.lockNumber || 'N/A'}
+                      </Badge>
+                      <div className="small text-muted ms-1 text-truncate" style={{ maxWidth: '180px' }}>
+                        <i className="bi bi-geo-alt me-1 opacity-75"></i>
+                        {b.lock?.zone?.name || 'ไม่ระบุโซน'}
+                      </div>
                     </div>
                   </td>
                   <td className="small">

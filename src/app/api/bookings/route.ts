@@ -4,6 +4,7 @@ import { calculateBookingDetails, RentalType } from '@/lib/utils/booking';
 import connectDB from '@/lib/db/mongoose';
 import Booking from '@/models/Booking';
 import Lock from '@/models/Lock';
+import Zone from '@/models/Zone';
 import mongoose from 'mongoose';
 import { NotificationService } from '@/lib/notification/service';
 
@@ -206,7 +207,10 @@ export async function GET() {
 
         await connectDB();
         const bookings = await Booking.find({ user: session.user.id })
-            .populate('lock')
+            .populate({
+                path: 'lock',
+                populate: { path: 'zone', select: 'name' }
+            })
             .sort({ createdAt: -1 });
 
         return NextResponse.json(bookings);

@@ -175,21 +175,21 @@ export default function AdminDashboard() {
                       tick={{ fill: '#999', fontSize: 12 }}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [formatCurrency(value), 'รายได้']}
+                      formatter={(value: number | string) => [formatCurrency(Number(value) || 0), 'รายได้']}
                       labelFormatter={(label: string | number) => new Date(label).toLocaleDateString('th-TH', { 
                         weekday: 'long', 
                         year: 'numeric', 
                         month: 'long', 
                         day: 'numeric' 
                       })}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="amount" 
-                      stroke="#0d6efd" 
+                      stroke="#10b981" 
                       strokeWidth={3}
-                      dot={{ r: 4, fill: '#0d6efd', strokeWidth: 2, stroke: '#fff' }}
+                      dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
                       activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                   </LineChart>
@@ -214,23 +214,24 @@ export default function AdminDashboard() {
             <Card.Body className="pt-0" style={{ height: '300px' }}>
               {charts && charts.zoneStats.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={charts.zoneStats} layout="vertical" margin={{ left: -20, right: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                  <BarChart data={charts.zoneStats} layout="vertical" margin={{ left: 10, right: 30, top: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                     <XAxis type="number" hide />
                     <YAxis 
                       dataKey="name" 
                       type="category" 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#666', fontSize: 13, fontWeight: 500 }}
+                      tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
+                      width={130}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [`${value} ล็อก`, 'ถูกจอง']}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      formatter={(value: number | string) => [`${value || 0} ล็อก`, 'ถูกจอง']}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                     />
-                    <Bar dataKey="occupied" radius={[0, 10, 10, 0]} barSize={20}>
+                    <Bar dataKey="occupied" radius={[0, 10, 10, 0]} barSize={24}>
                       {charts.zoneStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6f42c1'][index % 5]} />
+                        <Cell key={`cell-${index}`} fill={['#10b981', '#059669', '#34d399', '#05bb8a', '#10b981'][index % 5]} />
                       ))}
                     </Bar>
                   </BarChart>
