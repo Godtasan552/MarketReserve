@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   sassOptions: {
     includePaths: [path.join(__dirname, 'styles')],
     silenceDeprecations: ['legacy-js-api', 'import', 'if-function', 'global-builtin', 'color-functions'],
