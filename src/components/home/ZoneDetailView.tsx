@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, Badge, Button, Spinner, Row, Col } from 'react-bootstrap';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,27 +31,49 @@ interface ZoneDetailViewProps {
   onBack: () => void;
 }
 
-// Generate grid positions for locks (simulating market layout)
-const generateLockPositions = (lockCount: number) => {
-  const positions: { x: number; y: number }[] = [];
-  const cols = Math.ceil(Math.sqrt(lockCount));
-  const rows = Math.ceil(lockCount / cols);
-  
-  for (let i = 0; i < lockCount; i++) {
-    const row = Math.floor(i / cols);
-    const col = i % cols;
-    
-    // Add some randomness for more natural look
-    const randomX = (Math.random() - 0.5) * 5;
-    const randomY = (Math.random() - 0.5) * 5;
-    
-    positions.push({
-      x: 15 + (col * (70 / cols)) + randomX,
-      y: 15 + (row * (70 / rows)) + randomY
-    });
+// Fixed coordinates for locks to match background images
+const LOCK_POSITION_MAP: Record<string, { x: number; y: number }> = {
+  // Zone A: Premium Retail (8 locks)
+  'A-001': { x: 20, y: 59 },
+  'A-002': { x: 38, y: 40 },
+  'A-003': { x: 55, y: 25 },
+  'A-004': { x: 67, y: 16 },
+  'A-005': { x: 40, y: 73 },
+  'A-006': { x: 55, y: 56 },
+  'A-007': { x: 68, y: 44 },
+  'A-008': { x: 80, y: 34 },
+
+  // Zone B: Food Court (up to 12 stalls)
+  'B-001': { x: 12, y: 44 }, 'B-002': { x: 20, y: 40 }, 'B-003': { x: 27, y: 35 }, 'B-004': { x: 34, y: 30 },
+  'B-005': { x: 22, y: 56 }, 'B-006': { x: 30, y: 50 }, 'B-007': { x: 37, y: 45 }, 'B-008': { x: 44, y: 40 },
+  'B-009': { x: 33, y: 65 }, 'B-010': { x: 42, y: 60 }, 'B-011': { x: 50, y: 55 }, 'B-012': { x: 58, y: 50 },
+
+  // Zone C: Fashion (up to 12 booths)
+  'C-001': { x: 55, y: 21 }, 'C-002': { x: 41, y: 30 }, 'C-003': { x: 67, y: 33 }, 'C-004': { x: 52, y: 43 },
+  'C-005': { x: 38, y: 51 }, 'C-006': { x: 22, y: 61 }, 'C-007': { x: 64, y: 53 }, 'C-008': { x: 50, y: 63 },
+  'C-009': { x: 35, y: 72 }, 'C-010': { x: 73, y: 66 }, 'C-011': { x: 86, y: 40 }, 'C-012': { x: 72, y: 30 },
+
+  // Zone D: Fresh Produce (up to 16 stalls)
+  'D-001': { x: 20, y: 65 }, 'D-002': { x: 14, y: 23 }, 'D-003': { x: 44, y: 20 }, 'D-004': { x: 64, y: 18 },
+  'D-005': { x: 25, y: 45 }, 'D-006': { x: 40, y: 46 }, 'D-007': { x: 66, y: 44 }, 'D-008': { x: 80, y: 43 },
+  'D-009': { x: 35, y: 70 }, 'D-010': { x: 41, y: 72 }, 'D-011': { x: 60, y: 67 }, 'D-012': { x: 74, y: 70 },
+};
+
+const getLockPosition = (lockNumber: string, index: number, total: number) => {
+  // Return fixed position if exists
+  if (LOCK_POSITION_MAP[lockNumber]) {
+    return LOCK_POSITION_MAP[lockNumber];
   }
+
+  // Fallback to stable grid if not mapped
+  const cols = Math.ceil(Math.sqrt(total));
+  const row = Math.floor(index / cols);
+  const col = index % cols;
   
-  return positions;
+  return {
+    x: 10 + (col * (80 / Math.max(1, cols))),
+    y: 20 + (row * (60 / Math.max(1, Math.ceil(total / cols))))
+  };
 };
 
 export default function ZoneDetailView({ 
@@ -86,7 +108,10 @@ export default function ZoneDetailView({
     }
   };
 
-  const lockPositions = generateLockPositions(locks.length);
+  const lockPositions = useMemo(() => 
+    locks.map((lock, index) => getLockPosition(lock.lockNumber, index, locks.length)), 
+    [locks]
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -166,37 +191,10 @@ export default function ZoneDetailView({
                 className="position-relative w-100"
                 style={{
                   height: '600px',
-                  background: zonePrefix === 'A' 
-                    ? `url(/zone-a-detail.png) center/cover no-repeat, linear-gradient(135deg, ${zoneColor}15 0%, ${zoneColor}05 100%)`
-                    : `linear-gradient(135deg, ${zoneColor}20 0%, ${zoneColor}08 100%)`,
-                  backgroundImage: zonePrefix !== 'A' 
-                    ? `linear-gradient(135deg, ${zoneColor}20 0%, ${zoneColor}08 100%), repeating-linear-gradient(0deg, ${zoneColor}10 0px, ${zoneColor}10 1px, transparent 1px, transparent 50px), repeating-linear-gradient(90deg, ${zoneColor}10 0px, ${zoneColor}10 1px, transparent 1px, transparent 50px)`
-                    : undefined,
+                  background: `url(/zone_${zonePrefix.toLowerCase()}.png) center/cover no-repeat, linear-gradient(135deg, ${zoneColor}15 0%, ${zoneColor}05 100%)`,
                   position: 'relative'
                 }}
               >
-                {/* Zone Illustration Overlay for zones without images */}
-                {zonePrefix !== 'A' && (
-                  <div
-                    className="position-absolute w-100 h-100 d-flex align-items-center justify-content-center"
-                    style={{
-                      opacity: 0.1,
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    <i 
-                      className={`bi ${
-                        zonePrefix === 'B' ? 'bi-cup-hot' :
-                        zonePrefix === 'C' ? 'bi-bag-heart' :
-                        'bi-basket'
-                      }`}
-                      style={{
-                        fontSize: '200px',
-                        color: zoneColor
-                      }}
-                    />
-                  </div>
-                )}
                 {/* Zone Label */}
                 <div
                   className="position-absolute top-0 start-0 m-4 px-4 py-3 rounded-3 shadow-sm"

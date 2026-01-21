@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { Container, Row, Col, Card, Form, Button, Badge, InputGroup, Placeholder } from 'react-bootstrap';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LinkAny = Link as any;
@@ -23,19 +24,41 @@ interface Zone {
 }
 
 export default function LockBrowsingPage() {
+  return (
+    <Suspense fallback={
+      <Container className="py-5 text-center">
+        <Placeholder as="h2" animation="glow"><Placeholder xs={6} /></Placeholder>
+      </Container>
+    }>
+      <LockBrowsingContent />
+    </Suspense>
+  );
+}
+
+function LockBrowsingContent() {
+  const searchParams = useSearchParams();
   const [locks, setLocks] = useState<Lock[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
-  const [selectedZone, setSelectedZone] = useState('');
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [statusFilter, setStatusFilter] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedZone, setSelectedZone] = useState(searchParams.get('zone') || '');
+  const [priceRange, setPriceRange] = useState({ 
+    min: searchParams.get('minPrice') || '', 
+    max: searchParams.get('maxPrice') || '' 
+  });
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || '');
 
   // Bookmarks
   const [bookmarkedLockIds, setBookmarkedLockIds] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // Sync state with URL params on mount or when params change (optional but good for back/forward)
+  useEffect(() => {
+    const zone = searchParams.get('zone');
+    if (zone !== null) setSelectedZone(zone);
+  }, [searchParams]);
 
   const fetchBookmarks = async () => {
     try {

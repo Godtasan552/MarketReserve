@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${inter.className} ${notoSansThai.className}`}>
+    <html lang="th" className={`${inter.className} ${notoSansThai.className}`} suppressHydrationWarning>
       <body>
         <AuthProvider>
           {children}
