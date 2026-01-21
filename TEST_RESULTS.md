@@ -24,6 +24,8 @@
 - **Booking Date Protection**: ✅ PASSED (Start date now defaults to today and is read-only)
 - **Docker Desktop Test**: ✅ PASSED (App and DB running via docker-compose)
 - **Proxy Transition**: ✅ PASSED (Renamed `middleware.ts` to `proxy.ts` to resolve Next.js 16 deprecation warning)
+- **Node.js 20 Upgrade**: ✅ PASSED (Updated Dockerfile to satisfy Next.js 16 requirement)
+- **Vercel Hobby Cron Fix**: ✅ PASSED (Migrated triggers to GitHub Actions; verified API security with CRON_SECRET)
 
 ## Next Steps: Manual Testing
 Please proceed with the **Manual Testing** steps from `TESTING_CHECKLIST.md` to verify the UI and End-to-End flows:

@@ -56,7 +56,7 @@
   - Production: MongoDB Atlas (Cloud)
   - Local/Dev: MongoDB in Docker
 - **CDN**: Cloudinary CDN
-- **CI/CD**: Vercel Git Integration / Docker Build
+- **CI/CD**: Vercel Git Integration / GitHub Actions (Cron Triggers)
 
 ---
 
@@ -390,13 +390,13 @@ $enable-rounded: true;
 
 **Notification Policy:**
 
-| เหตุการณ์ (Event) | In-App (Web) | Email | หมายเหตุ |
+| เหตุการณ์ (Event) | In-App (Web) | Email (ปิดการใช้งาน) | หมายเหตุ |
 |-------------------|--------------|-------|----------|
-| **จองสำเร็จ** (Booking Created) | ✅ | ✅ | แจ้งยอดชำระและ Deadline |
+| **จองสำเร็จ** (Booking Created) | ✅ | ❌ | แจ้งยอดชำระและ Deadline ในแอป |
 | **อัปโหลดสลิป** (Payment Uploaded) | ❌ | ❌ | ลด Spam (ผู้ใช้รู้ตัวอยู่แล้ว) |
-| **อนุมัติ/ปฏิเสธ** (Approved/Rejected)| ✅ | ✅ | แจ้งผลการตรวจสอบทันที |
-| **แจ้งเตือนคิวถูกยกเลิก** (Queue Cancelled) | ✅ | ✅ | แจ้งเมื่อล็อคถูกเช่าไปแล้ว |
-| **แจ้งเตือนก่อนหมดอายุ** (Expiring) | ✅ | ✅ | แจ้งเตือนเพื่อให้ต่อสัญญา |
+| **อนุมัติ/ปฏิเสธ** (Approved/Rejected)| ✅ | ❌ | แจ้งผลการตรวจสอบทันทีในแอป |
+| **แจ้งเตือนคิวถูกยกเลิก** (Queue Cancelled) | ✅ | ❌ | แจ้งเมื่อล็อคถูกเช่าไปแล้ว |
+| **แจ้งเตือนก่อนหมดอายุ** (Expiring) | ✅ | ❌ | แจ้งเตือนเพื่อให้ต่อสัญญา |
 | **ระบบ/ทั่วไป** (System) | ✅ | ❌ | แจ้งข่าวสารทั่วไป |
 
 - **Real-time**: ใช้การ Polling หน้าเว็บระยะสั้น (Demo-ready) หรือ WebSocket (Future)
@@ -507,7 +507,7 @@ $enable-rounded: true;
 ### 5.6 การจัดการเวลาเช่า (Time Management)
 
 #### 5.6.1 Auto Contract Expiry
-- Cron job ทำงานทุก 15 นาที
+- GitHub Actions Trigger ทำงานทุก 15 นาที
 - ตรวจสอบสัญญาที่กำลังจะหมด
 - ส่งการแจ้งเตือนตามกำหนดเวลา (7d, 3d, 1d)
 

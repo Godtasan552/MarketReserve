@@ -50,10 +50,11 @@
 ## Technical Stack & Tools (Current)
 
 - **Framework**: Next.js 16 (App Router)
+- **Node.js**: Version 20+ (Required for Next.js 16)
 - **UI Framework**: Bootstrap 5.3 + React Bootstrap
 - **Icons**: Bootstrap Icons
 - **Database**: MongoDB + Mongoose
-- **Auth**: NextAuth.js v5 (Beta)
+- **Auth**: NextAuth.js v5 (Beta) with JWT Strategy
 - **Validation**: Zod + React Hook Form
 - **Scripting**: tsx (for running TypeScript scripts)
 - **Styling**: Vanilla CSS / SCSS
@@ -96,13 +97,14 @@ MONGODB_URI=mongodb+srv://...
 # Auth
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret
+CRON_SECRET=your-secure-random-string
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 
-# Initial Admin (ใช้สำหรับรัน script seed-admin)
+# Initial Admin
 ADMIN_NAME="Admin Market"
 ADMIN_USERNAME=admin@markethub.com
 ADMIN_PASSWORD=your-secure-password
@@ -570,20 +572,21 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-**Setup Vercel Cron** (`vercel.json`):
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/cancel-expired-bookings",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/send-renewal-notifications",
-      "schedule": "0 * * * *"
-    }
-  ]
-}
+**Setup Trigger (GitHub Actions)** (`.github/workflows/cron.yml`):
+เนื่องจากแผน Vercel Hobby จำกัด Cron Job ไว้เพียงวันละ 1 ครั้ง เราจึงใช้ GitHub Actions เพื่อ Trigger API ทุกๆ 15 นาทีแทน
+
+```yaml
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          https://your-app.vercel.app/api/cron/cancel-expired-bookings
 ```
 
 **Checklist**:
@@ -653,12 +656,12 @@ export const NotificationService = {
 
 #### 2.1 Notification Policy
 
-| Event | In-App | Email |
+| Event | In-App | Email (Disabled) |
 |------|--------|-------|
-| booking_created | ✅ | ✅ |
+| booking_created | ✅ | ❌ |
 | payment_uploaded | ❌ | ❌ |
-| booking_approved | ✅ | ✅ |
-| booking_expiring | ✅ | ✅ |
+| booking_approved | ✅ | ❌ |
+| booking_expiring | ✅ | ❌ |
 ```
 
 #### 3. API Endpoints

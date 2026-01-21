@@ -25,7 +25,7 @@
 ## 3. ขั้นตอนการรันระบบ (สำหรับผู้รับ/เพื่อน)
 
 ### สเต็ปที่ 1: ตั้งค่า Environment (.env)
-เพื่อนต้องสร้างไฟล์ `.env` (ก๊อปจาก `.env.example`) และตั้งค่า `MONGODB_URI` ให้ชี้ไปที่บริการใน Docker:
+เพื่อนต้องสร้างไฟล์ `.env` (ก๊อปจาก `.env.example`) และตั้งค่าพื้นฐาน:
 ```env
 # ต่อกับ MongoDB ที่รันอยู่ใน Docker Network ตัวเดียวกัน
 MONGODB_URI=mongodb://mongodb:27017/markethub
@@ -33,6 +33,7 @@ MONGODB_URI=mongodb://mongodb:27017/markethub
 # ค่าพื้นฐานอื่นๆ
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_secret_key
+CRON_SECRET=your_cron_secret_key
 ```
 
 ### สเต็ปที่ 2: เริ่มระบบด้วย Docker Compose

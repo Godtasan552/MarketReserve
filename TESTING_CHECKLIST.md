@@ -41,8 +41,9 @@ Before deploying the complete system, we must ensure all core functionalities wo
 - [ ] **QR Code**: QR code generated/displayed for payment.
 - [ ] **Slip Upload**: Admin/User can upload slip image.
 - [ ] **OCR Check**: Basic OCR extracts amount/date (test with sample slip).
-- [ ] **Admin Verify**: Admin can Approve booking -> Lock becomes "Rented", Booking "Active".
+- [ ] **Admin Verify**: Admin can Approve booking -> Lock becomes "Rented", Booking "Active" (Notify User).
 - [ ] **Admin Reject**: Admin can Reject booking -> Lock becomes "Available" (or pending if user retries).
+- [ ] **In-App Notification**: User sees a new notification after approval/rejection.
 
 ## 6. Admin Panel
 - [ ] **Dashboard**: Stats (Total Users, revenue, etc.) load without error.
@@ -64,3 +65,5 @@ Before deploying the complete system, we must ensure all core functionalities wo
 - [ ] **Docker App**: `docker-compose up` starts the app successfully.
 - [ ] **Docker DB**: Can connect to local MongoDB via Compass at `localhost:27017`.
 - [ ] **Docker Environment**: App connects to DB using internal Docker network name.
+- [ ] **Cron Security**: Calling `/api/cron/*` without `Authorization` header returns `401 Unauthorized`.
+- [ ] **GitHub Action Trigger**: Manual trigger of "System Cron Triggers" workflow succeeds.
