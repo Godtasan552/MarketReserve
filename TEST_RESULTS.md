@@ -1,9 +1,12 @@
 # Automated Test Results
-Date: 2026-01-20
+Date: 2026-01-21
 
 ## Summary
 - **Queue Processor Logic**: ✅ PASSED
 - **Interest Notifier Logic**: ✅ PASSED
+- **Admin Dashboard Visuals**: ✅ PASSED
+- **Responsive Navigation**: ✅ PASSED
+- **Docker Containerization**: ✅ PASSED
 
 ## Detailed Results
 
@@ -17,6 +20,12 @@ Date: 2026-01-20
 - **Admin Row Click**: ✅ PASSED (Improved payment verification accessibility)
 - **Bookmarks & Filter**: ✅ PASSED (Bookmark icon updated, advanced filtering on `/bookmarks` working)
 - **Data Seeding**: ✅ PASSED (`seed-market-data` creates diverse test environment)
+- **Premium Emerald Theme**: ✅ PASSED (Global CSS variables and Glassmorphism applied)
+- **Admin Layout Responsiveness**: ✅ PASSED (Sidebar on LG+, Mobile Navbar on <LG)
+- **Dashboard Chart Fixes**: ✅ PASSED (No label cutoff, colors standardized to Emerald)
+- **Zone Data Population**: ✅ PASSED (Fixed "ไม่ระบุโซน" in Admin and User bookings)
+- **Booking Date Protection**: ✅ PASSED (Start date now defaults to today and is read-only)
+- **Docker Desktop Test**: ✅ PASSED (App and DB running via docker-compose)
 
 ## Next Steps: Manual Testing
 Please proceed with the **Manual Testing** steps from `TESTING_CHECKLIST.md` to verify the UI and End-to-End flows:

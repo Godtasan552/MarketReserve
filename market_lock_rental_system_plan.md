@@ -49,10 +49,14 @@
 - **SMS** (ตัวเลือก): Twilio
 - **Push Notifications**: Web Push API
 
-### 3.4 การ Deploy
-- **Hosting**: Vercel (Next.js) + MongoDB Atlas (Database)
+### 3.4 การ Deployment & DevOps
+- **Hosting**: Vercel (Cloud)
+- **Containerization**: **Docker** (Dockerfile + Docker Compose)
+- **Database Architecture**: 
+  - Production: MongoDB Atlas (Cloud)
+  - Local/Dev: MongoDB in Docker
 - **CDN**: Cloudinary CDN
-- **Domain**: Custom domain with SSL
+- **CI/CD**: Vercel Git Integration / Docker Build
 
 ---
 
@@ -85,53 +89,40 @@ import './globals.css';
 
 **2. สร้างไฟล์ Custom SCSS** (`styles/custom-bootstrap.scss`):
 ```scss
-// Override Bootstrap variables ก่อน import
-$primary: #0d6efd;        // สีหลัก
-$secondary: #6c757d;      // สีรอง
-$success: #198754;        // สีสำเร็จ
-$info: #0dcaf0;           // สีข้อมูล
-$warning: #ffc107;        // สีเตือน
-$danger: #dc3545;         // สีอันตราย
-$dark: #212529;           // สีเข้ม
-$light: #f8f9fa;          // สีอ่อน
+// Theme: Premium Emerald (เขียวเข้มหรูหรา)
+$primary: #10b981;        // Emerald Green
+$primary-dark: #065f46;   // Forest Green
+$secondary: #64748b;      // Slate
+$success: #10b981;
+$info: #3b82f6;
+$warning: #f59e0b;
+$danger: #ef4444;
+$dark: #0f172a;
+$light: #ffffff;
 
-// Font family
-$font-family-sans-serif: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+// Glassmorphism & UI Aesthetics
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
 
-// Border radius
-$border-radius: 0.5rem;
-$border-radius-sm: 0.25rem;
-$border-radius-lg: 0.75rem;
-
-// Spacing
-$spacer: 1rem;
-
-// Import Bootstrap
-@import '~bootstrap/scss/bootstrap';
-
-// Custom classes
-.card-lock {
-  transition: transform 0.2s, box-shadow 0.2s;
-  
+.card-lift {
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
   }
 }
 
 .status-badge {
-  &.available { 
-    background-color: $success; 
-  }
-  &.booked { 
-    background-color: $warning; 
-  }
-  &.rented { 
-    background-color: $danger; 
-  }
-  &.expiring-soon { 
-    background-color: #fd7e14; // Orange
-  }
+  border-radius: 50rem;
+  padding: 0.35em 0.8em;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 ```
 
@@ -302,9 +293,8 @@ $enable-rounded: true;
 - รูปภาพจริงของล็อค (อัปโหลดจาก Cloudinary)
 - ข้อมูลโซน ราคา และขนาด
 - ปฏิทินแสดงวันที่ว่าง / ไม่ว่าง (Calendar View)
-- เลือกระยะเวลาเช่า:
-  - รายวัน / รายสัปดาห์ / รายเดือน
-- เลือกวันและเวลาเริ่มเช่า (Start DateTime)
+- เลือกระยะเวลาเช่า: รายวัน / รายสัปดาห์ / รายเดือน
+- **การเลือกวัน (Start Date)**: ระบบจะล็อควันที่เริ่มต้นเป็น **"วันที่ปัจจุบัน"** โดยอัตโนมัติ (Read-only) เพื่อความเรียบง่ายและป้องกันความสับสนในการจองล่วงหน้าที่ยังไม่เปิดให้บริการ
 - แสดงราคารวมทันที
 
 ### 4.3 ระบบจองและการแจ้งเตือน (Booking & Notification)
@@ -444,9 +434,16 @@ $enable-rounded: true;
 ### 5.1 Dashboard
 - **สรุปภาพรวม**:
   - จำนวนล็อคว่าง / ถูกเช่า / รอชำระเงิน
-  - รายได้รายวัน / รายเดือน (กราฟแท่ง, กราฟเส้น)
-  - โซนที่ได้รับความนิยม (Heatmap)
+  - กราฟรายได้ (Revenue Line Chart) สี Emerald พร้อม Tooltip แบบกำหนดเอง
+  - กราฟสัดส่วนการจองตามโซน (Zone Booking Bar Chart) พร้อมรองรับชื่อโซนยาว (Auto-width adjustment)
   - อัตราการเช่าเฉลี่ย (Occupancy Rate)
+- **Responsive Layout**:
+  - Desktop (LG+): Sidebar แนวตั้ง (Sticky Vertical Sidebar) พร้อม Branding และปุ่ม Logout
+  - Mobile (<LG): Navbar ด้านบนแบบยุบได้ (Collapsible Top Navbar) พร้อม Toggle Hamburger เมนู
+- **UI Enhancements**:
+  - ตารางการจองใช้ Badge แบบ Pill-style พร้อมไอคอน `bi-shop` สำหรับหมายเลขล็อค
+  - แสดงสถานะโซนพร้อมไอคอน `bi-geo-alt`
+  - แก้ไขปัญหา "ไม่ระบุโซน" โดยการใช้ Nested Population ใน API
 
 - **แจ้งเตือนสำคัญ**:
   - สลิปรอตรวจสอบ (จำนวน badge)

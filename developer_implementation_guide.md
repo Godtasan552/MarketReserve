@@ -13,6 +13,7 @@
 
 สำหรับนักพัฒนาที่ Clone โปรเจกต์ไปใหม่ ให้ทำตามขั้นตอนดังนี้:
 
+#### option A: รันผ่าน Node.js (Local Development)
 1.  **Clone โปรเจกต์**:
     ```bash
     git clone [repository-url]
@@ -22,14 +23,17 @@
     ```bash
     npm install
     ```
-    *ขั้นตอนนี้จะติดตั้งแพ็กเกจทั้งหมดรวมถึง `sass` ที่จำเป็นสำหรับการรัน CSS*
-3.  **ตั้งค่า Environment**:
-    - สร้างไฟล์ `.env` โดยคัดลอกข้อมูลจากเพื่อนหรือตามตัวอย่างในหัวข้อ "MongoDB & Admin Seeding"
-4.  **รันโปรเจกต์ (Development Mode)**:
+3.  **ตั้งค่า Environment**: ก๊อปปี้ `.env.example` เป็น `.env` และใส่ค่าต่างๆ
+4.  **รันโปรเจกต์**: `npm run dev`
+
+#### Option B: รันผ่าน Docker (แนะนำสำหรับเครื่องเพื่อน)
+1.  **ตั้งค่า .env**: ใช้ `MONGODB_URI=mongodb://mongodb:27017/markethub`
+2.  **รันคำสั่งเดียว**:
     ```bash
-    npm run dev
+    docker-compose up --build -d
     ```
-5.  **เปิดเบราว์เซอร์**: เข้าไปที่ `http://localhost:3000`
+    *ระบบจะสร้างทั้ง App และ Database ให้ในตัว ไม่ต้องลงอะไรเพิ่ม*
+3.  **Import ข้อมูล**: ใช้ MongoDB Compass ต่อไปที่ `localhost:27017` เพื่อ Import ข้อมูลจริงที่คุณได้รับ
 
 ---
 
@@ -83,9 +87,11 @@ npm install -D @types/bcryptjs tsx
 #### Day 3-4: MongoDB & Admin Seeding
 **Environment Variables** (`.env`):
 ```env
-# Database (รองรับทั้ง MONGO_URL และ MONGODB_URI)
-MONGO_URL=mongodb://...
-MONGODB_URI=mongodb://...
+# Database
+# Option 1: Cloud Atlas
+MONGODB_URI=mongodb+srv://...
+# Option 2: Local Docker
+# MONGODB_URI=mongodb://mongodb:27017/markethub
 
 # Auth
 NEXTAUTH_URL=http://localhost:3000
@@ -756,30 +762,23 @@ describe('/api/bookings', () => {
 
 ### Week 8, Day 4-5: Deployment
 
-#### Vercel Deployment
-```bash
-# Install Vercel CLI
-npm i -g vercel
+#### Vercel Deployment (Cloud)
+1.  Add all variables to Vercel Dashboard
+2.  Enable Vercel Cron Jobs
+3.  `vercel --prod`
 
-# Deploy to preview
-vercel
-
-# Deploy to production
-vercel --prod
-```
-
-**Environment Variables** (Vercel Dashboard):
-- Add all `.env.local` variables
-- Enable Vercel Cron Jobs
-- Configure custom domain
+#### Docker Deployment (Self-Hosted / Test)
+- **Standalone Mode**: เปิดใช้งาน `output: 'standalone'` ใน `next.config.ts` เพื่อให้ Next.js สร้างโฟลเดอร์ที่รวมเฉพาะไฟล์ที่จำเป็นในการรัน Production จริง ช่วยลดขนาด Docker Image ลงได้มหาศาล (จากกิกะไบต์เหลือเพียงร้อยเมกะไบต์)
+- **Docker Compose**: รวมการทำงานของ App และ MongoDB Local (Container Name: `mongodb`)
+- **Network**: App เชื่อมต่อกับ DB ผ่าน Internal Docker Network
+- **Security**: ไม่รวมไฟล์ `.env` เข้าไปในขั้นตอน Build (ใช้ Runtime Environment Variables แทน)
 
 **Checklist**:
-- [ ] Deploy to Vercel
-- [ ] Configure MongoDB Atlas production cluster
-- [ ] Setup Cloudinary production
-- [ ] Configure custom domain + SSL
-- [ ] Setup monitoring (Sentry, Vercel Analytics)
-- [ ] Backup verification
+- [x] Create Dockerfile (Multi-stage)
+- [x] Configure docker-compose.yml with MongoDB
+- [x] Setup .dockerignore
+- [x] Add MongoDB port mapping for Compass access
+- [ ] Setup monitoring (Sentry)
 
 ---
 
@@ -870,7 +869,13 @@ npm install sass
 
 ### 5. ปัญหาการเชื่อมต่อฐานข้อมูล (MongoDB Connection Error)
 **อาการ**: ระบบแจ้งว่าไม่สามารถเชื่อมต่อฐานข้อมูลได้
-**วิธีแก้ไข**: ตรวจสอบว่าได้ตั้งค่า `MONGODB_URI` ใน `.env` ถูกต้อง และได้เพิ่ม IP Address ของคุณใน whitelist บน MongoDB Atlas แล้ว
+**วิธีแก้ไข**: 
+- **Cloud**: ตรวจสอบ White-list IP ใน MongoDB Atlas
+- **Docker**: ตรวจสอบว่าใน `.env` ใช้ชื่อ host ว่า `mongodb` (ไม่ใช่ `localhost`) หากรัน App ภายใน Container
+
+### 6. ปัญหาเกี่ยวกับ OCR ใน Docker
+**อาการ**: OCR ทำงานไม่ได้หรือหาไฟล์ภาษาไม่เจอ
+**วิธีแก้ไข**: ตรวจสอบว่าได้ `COPY` ไฟล์ `eng.traineddata` และ `tha.traineddata` เข้าไปใน Docker Image แล้วในขั้นตอน Build (ไฟล์ต้องอยู่ที่ Root หรือตามที่กำหนดใน Config)
 
 ### 6. ปัญหา Authentication (Auth Errors)
 **อาการ**: ไม่สามารถ Login ได้ หรือเจอ "Invalid credentials"
