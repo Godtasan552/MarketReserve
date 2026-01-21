@@ -27,6 +27,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "recharts": "^3.6.0",
+    "resend": "^6.8.0",
     "sass": "^1.97.2",
     "sweetalert2": "^11.26.17",
     "sweetalert2-react-content": "^5.1.1",
