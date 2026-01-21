@@ -17,6 +17,10 @@ $border-radius: 0.75rem;
 $border-radius-sm: 0.375rem;
 $border-radius-lg: 1rem;
 
+// Nav Pills Overrides
+$nav-pills-link-active-bg: rgba(#10b981, 0.1);
+$nav-pills-link-active-color: #059669;
+
 // Spacing
 $spacer: 1rem;
 
@@ -25,32 +29,36 @@ $spacer: 1rem;
 
 // --- Premium Global Utilities ---
 
-// Navbar active state styling
-.nav-link {
-  position: relative;
-  transition: all 0.2s ease;
-  
-  &.active {
-    color: $primary !important;
-    font-weight: 700 !important;
+// Navbar active state styling - Scope to top navbar only
+.navbar-nav {
+  .nav-link {
+    position: relative;
+    transition: all 0.2s ease;
     
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: 0.8rem;
-      right: 0.8rem;
-      height: 3px;
-      background-color: $primary;
-      border-radius: 10px;
+    &.active {
+      color: $primary !important;
+      font-weight: 700 !important;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 0.8rem;
+        right: 0.8rem;
+        height: 3px;
+        background-color: $primary;
+        border-radius: 10px;
+      }
+    }
+    
+    &:hover:not(.active) {
+      color: $primary !important;
+      opacity: 0.8;
     }
   }
-  
-  &:hover:not(.active) {
-    color: $primary !important;
-    opacity: 0.8;
-  }
 }
+
+// Sidebars or other Navs are now handled by $nav-pills overrides
 
 // Soft lifting effect
 .card-lift {

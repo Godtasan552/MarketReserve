@@ -32,8 +32,8 @@ export default function LockDetailClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Booking Form State
-  const [startDate, setStartDate] = useState('');
+  // Booking Form State - Auto-set to today's date as requested
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [rentalType, setRentalType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [bookingLoading, setBookingLoading] = useState(false);
   
@@ -368,14 +368,14 @@ export default function LockDetailClient() {
                   <Form.Label className="fw-bold">วันที่เริ่มเช่า</Form.Label>
                   <Form.Control 
                     type="date" 
-                    min={new Date().toISOString().split('T')[0]}
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="py-2 border-primary-subtle rounded-3"
+                    readOnly
+                    className="py-2 bg-light border-primary-subtle rounded-3"
+                    style={{ cursor: 'not-allowed' }}
                     required
                   />
                   <Form.Text className="text-muted">
-                    <i className="bi bi-calendar-event me-1"></i> สามารถจองล่วงหน้าได้หากช่วงเวลานั้นยังว่าง
+                    <i className="bi bi-info-circle me-1"></i> ระบบจะเริ่มการจองนับจากวันที่ปัจจุบัน
                   </Form.Text>
                 </Form.Group>
 
